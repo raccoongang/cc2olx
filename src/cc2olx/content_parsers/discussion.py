@@ -19,13 +19,12 @@ class DiscussionContentParser(AbstractContentParser):
     }
 
     def _parse_content(self, idref: Optional[str]) -> Optional[Dict[str, str]]:
-        if (
-            idref
-            and (resource := self._cartridge.define_resource(idref))
-            and re.match(CommonCartridgeResourceType.DISCUSSION_TOPIC, resource["type"])
-        ):
-            data = self._parse_discussion(resource)
-            return data
+        if idref:
+            if resource := self._cartridge.define_resource(idref):
+                if re.match(CommonCartridgeResourceType.DISCUSSION_TOPIC, resource["type"]):
+                    data = self._parse_discussion(resource)
+                    return data
+        return None
 
     def _parse_discussion(self, resource: dict) -> Dict[str, str]:
         """

@@ -24,22 +24,15 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
 
     def _parse_content(self, idref: Optional[str]) -> Dict[str, str]:
         if idref:
-            if (resource := self._cartridge.define_resource(idref)) is None:
+            resource = self._cartridge.define_resource(idref)
+            if resource is None:
                 logger.info("Missing resource: %s", idref)
-                return self.DEFAULT_CONTENT
-
-            if resource["type"] == CommonCartridgeResourceType.WEB_CONTENT:
+                content = self.DEFAULT_CONTENT
+            elif resource["type"] == CommonCartridgeResourceType.WEB_CONTENT:
                 content = self._parse_webcontent(idref, resource)
             elif web_link_content := self._parse_web_link_content(resource):
                 content = self._transform_web_link_content_to_html(web_link_content)
-            elif any(
-                re.match(resource_type, resource["type"])
-                for resource_type in (
-                    CommonCartridgeResourceType.LTI_LINK,
-                    CommonCartridgeResourceType.QTI_ASSESSMENT,
-                    CommonCartridgeResourceType.DISCUSSION_TOPIC,
-                )
-            ):
+            elif self.is_known_unprocessed_resource_type(resource["type"]):
                 content = self.DEFAULT_CONTENT
             else:
                 content = self._parse_not_imported_content(resource)
@@ -50,15 +43,16 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
         """
         Parse the resource with "webcontent" type.
         """
-        res_relative_path = resource["children"][0].href
-        res_file_path = self._cartridge.build_res_file_path(res_relative_path)
+        res_file = resource["children"][0]
+        res_relative_link = res_file.href
+        res_file_path = self._cartridge.build_res_file_path(res_relative_link)
 
         if res_file_path.suffix == HTML_FILENAME_SUFFIX:
             content = self._parse_webcontent_html_file(idref, res_file_path)
         elif WEB_RESOURCES_DIR_NAME in str(res_file_path) and imghdr.what(str(res_file_path)):
             content = self._parse_image_webcontent_from_web_resources_dir(res_file_path)
         elif WEB_RESOURCES_DIR_NAME not in str(res_file_path):
-            content = self._parse_webcontent_outside_web_resources_dir(res_relative_path)
+            content = self._parse_webcontent_outside_web_resources_dir(res_relative_link)
         else:
             logger.info("Skipping webcontent: %s", res_file_path)
             content = self.DEFAULT_CONTENT
@@ -116,6 +110,20 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
         """
         video_link_html = LINK_HTML.format(url=web_link_content["href"], text=web_link_content.get("text", ""))
         return {"html": video_link_html}
+
+    @staticmethod
+    def is_known_unprocessed_resource_type(resource_type: str) -> bool:
+        """
+        Decides whether the resource type is a known CC type to be unprocessed.
+        """
+        return any(
+            re.match(type_pattern, resource_type)
+            for type_pattern in (
+                CommonCartridgeResourceType.LTI_LINK,
+                CommonCartridgeResourceType.QTI_ASSESSMENT,
+                CommonCartridgeResourceType.DISCUSSION_TOPIC,
+            )
+        )
 
     @staticmethod
     def _parse_not_imported_content(resource: dict) -> Dict[str, str]:

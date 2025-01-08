@@ -19,7 +19,8 @@ class WebLinkParserMixin:
         Provide Web Link resource data.
         """
         if web_link_match := re.match(CommonCartridgeResourceType.WEB_LINK, resource["type"]):
-            res_file_path = self._cartridge.build_res_file_path(resource["children"][0].href)
+            res_file = resource["children"][0]
+            res_file_path = self._cartridge.build_res_file_path(res_file.href)
             tree = filesystem.get_xml_tree(res_file_path)
             root = tree.getroot()
             ns = self._build_web_link_namespace(web_link_match)

@@ -27,14 +27,6 @@ class OlxExport:
     OLX guide: https://edx.readthedocs.io/projects/edx-open-learning-xml/en/latest/
     """
 
-    # content types
-    HTML = "html"
-    LINK = "link"
-    VIDEO = "video"
-    LTI = "lti"
-    QTI = "qti"
-    DISCUSSION = "discussion"
-
     def __init__(self, cartridge, link_file=None, passport_file=None):
         self.cartridge = cartridge
         self.doc = None

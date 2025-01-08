@@ -23,24 +23,23 @@ class LtiContentParser(AbstractContentParser):
     DEFAULT_HEIGHT = "500"
 
     def _parse_content(self, idref: Optional[str]) -> Optional[dict]:
-        if (
-            idref
-            and (resource := self._cartridge.define_resource(idref))
-            and re.match(CommonCartridgeResourceType.LTI_LINK, resource["type"])
-        ):
-            data = self._parse_lti(resource)
-            # Canvas flavored courses have correct url in module meta for lti links
-            if self._cartridge.is_canvas_flavor:
-                if item_data := self._cartridge.module_meta.get_external_tool_item_data(idref):
-                    data["launch_url"] = item_data.get("url", data["launch_url"])
-            return data
+        if idref:
+            if resource := self._cartridge.define_resource(idref):
+                if re.match(CommonCartridgeResourceType.LTI_LINK, resource["type"]):
+                    data = self._parse_lti(resource)
+                    # Canvas flavored courses have correct url in module meta for lti links
+                    if self._cartridge.is_canvas_flavor:
+                        if item_data := self._cartridge.module_meta.get_external_tool_item_data(idref):
+                            data["launch_url"] = item_data.get("url", data["launch_url"])
+                    return data
         return None
 
     def _parse_lti(self, resource: dict) -> dict:
         """
         Parse LTI resource.
         """
-        res_file_path = self._cartridge.build_res_file_path(resource["children"][0].href)
+        res_file = resource["children"][0]
+        res_file_path = self._cartridge.build_res_file_path(res_file.href)
         tree = filesystem.get_xml_tree(res_file_path)
         root = tree.getroot()
         title = root.find("blti:title", self.NAMESPACES).text
@@ -62,21 +61,21 @@ class LtiContentParser(AbstractContentParser):
         """
         if (launch_url := resource_root.find("blti:secure_launch_url", self.NAMESPACES)) is None:
             launch_url = resource_root.find("blti:launch_url", self.NAMESPACES)
-        return "" if launch_url is None else launch_url.text
+        return getattr(launch_url, "text", "")
 
     def _parse_width(self, resource_root: etree._Element) -> str:
         """
         Parse width.
         """
         width = resource_root.find("blti:extensions/lticm:property[@name='selection_width']", self.NAMESPACES)
-        return self.DEFAULT_WIDTH if width is None else width.text
+        return getattr(width, "text", self.DEFAULT_WIDTH)
 
     def _parse_height(self, resource_root: etree._Element) -> str:
         """
         Parse height.
         """
         height = resource_root.find("blti:extensions/lticm:property[@name='selection_height']", self.NAMESPACES)
-        return self.DEFAULT_HEIGHT if height is None else height.text
+        return getattr(height, "text", self.DEFAULT_HEIGHT)
 
     def _parse_custom_parameters(self, resource_root: etree._Element) -> Dict[str, str]:
         """
@@ -88,12 +87,8 @@ class LtiContentParser(AbstractContentParser):
     def _parse_lti_id(self, resource_root: etree._Element, title: str) -> str:
         """
         Parse LTI identifier.
+
+        For Canvas flavored CC, tool_id is used as lti_id if present.
         """
-        # For Canvas flavored CC, tool_id can be used as lti_id if present
         tool_id = resource_root.find("blti:extensions/lticm:property[@name='tool_id']", self.NAMESPACES)
-        # fmt: off
-        return (
-            simple_slug(title) if tool_id is None  # Create a simple slug lti_id from title
-            else tool_id.text
-        )
-        # fmt: on
+        return simple_slug(title) if tool_id is None else tool_id.text

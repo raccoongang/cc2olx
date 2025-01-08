@@ -34,6 +34,16 @@ class TestHtmlContentParser:
 
         logger_mock.info.assert_called_once_with("Missing resource: %s", idref_mock)
 
+    @patch("cc2olx.content_parsers.html.HtmlContentParser._parse_web_link_content", Mock(return_value=None))
+    @patch("cc2olx.content_parsers.html.HtmlContentParser.is_known_unprocessed_resource_type", Mock(return_value=True))
+    def test_parse_content_returns_default_content_for_known_unprocessed_resource_types(self):
+        parser = HtmlContentParser(MagicMock())
+        expected_content = {"html": "<p>MISSING CONTENT</p>"}
+
+        actual_content = parser._parse_content(Mock())
+
+        assert actual_content == expected_content
+
     @pytest.mark.parametrize(
         "resource_type",
         [
@@ -45,15 +55,16 @@ class TestHtmlContentParser:
             "imsdt_xmlv1p3",
         ],
     )
-    @patch("cc2olx.content_parsers.html.HtmlContentParser._parse_web_link_content", Mock(return_value=None))
-    def test_parse_content_returns_default_content_for_some_other_cc_resource_types(self, resource_type):
-        cartridge_mock = Mock(define_resource=Mock(return_value={"type": resource_type}))
-        parser = HtmlContentParser(cartridge_mock)
-        expected_content = {"html": "<p>MISSING CONTENT</p>"}
+    def test_known_unprocessed_resource_types_is_detected(self, resource_type):
+        parser = HtmlContentParser(Mock())
 
-        actual_content = parser._parse_content(Mock())
+        assert parser.is_known_unprocessed_resource_type(resource_type) is True
 
-        assert actual_content == expected_content
+    @pytest.mark.parametrize("resource_type", ["imsbasicabc_xmlv1p2", "imsexample_xmlv1p3", "not_cc_type", "imsscorm"])
+    def test_not_known_unprocessed_resource_types_is_detected(self, resource_type):
+        parser = HtmlContentParser(Mock())
+
+        assert parser.is_known_unprocessed_resource_type(resource_type) is False
 
     @pytest.mark.parametrize(
         "resource_type",
