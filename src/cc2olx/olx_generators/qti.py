@@ -1,3 +1,4 @@
+import functools
 import urllib.parse
 import xml.dom.minidom
 from html import unescape
@@ -39,7 +40,7 @@ class QtiOlxGenerator(AbstractOlxGenerator):
 
         return problems
 
-    @property
+    @functools.cached_property
     def _problem_creators_map(
         self,
     ) -> Dict[

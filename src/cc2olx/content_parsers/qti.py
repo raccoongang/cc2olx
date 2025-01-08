@@ -1,3 +1,4 @@
+import functools
 import logging
 import re
 from collections import OrderedDict
@@ -24,13 +25,12 @@ class QtiContentParser(AbstractContentParser):
     NAMESPACES = {"qti": "http://www.imsglobal.org/xsd/ims_qtiasiv1p2"}
 
     def _parse_content(self, idref: Optional[str]) -> Optional[List[dict]]:
-        if (
-            idref
-            and (resource := self._cartridge.define_resource(idref))
-            and re.match(CommonCartridgeResourceType.QTI_ASSESSMENT, resource["type"])
-        ):
-            res_file_path = self._cartridge.build_res_file_path(resource["children"][0].href)
-            return self._parse_qti(res_file_path)
+        if idref:
+            if resource := self._cartridge.define_resource(idref):
+                if re.match(CommonCartridgeResourceType.QTI_ASSESSMENT, resource["type"]):
+                    res_file = resource["children"][0]
+                    res_file_path = self._cartridge.build_res_file_path(res_file.href)
+                    return self._parse_qti(res_file_path)
         return None
 
     def _parse_qti(self, res_file_path: Path) -> List[dict]:
@@ -53,14 +53,15 @@ class QtiContentParser(AbstractContentParser):
     def _parse_problem(self, problem: etree._Element, problem_index: int, res_file_path: Path) -> dict:
         """
         Parse a QTI item.
+
+        When the malformed course (due to a weird Canvas behaviour) with equal
+        identifiers is gotten, a unique string is added to the raw identifier.
+        LMS doesn't support blocks with the same identifiers.
         """
         data = {}
 
         attributes = problem.attrib
 
-        # We're adding unique string to identifier here to handle cases,
-        # when we're getting malformed course (due to a weird Canvas behaviour)
-        # with equal identifiers. LMS doesn't support blocks with the same identifiers.
         data["ident"] = attributes["ident"] + str(problem_index)
         if title := attributes.get("title"):
             data["title"] = title
@@ -112,7 +113,7 @@ class QtiContentParser(AbstractContentParser):
 
         raise ValueError('Problem metadata must contain "cc_profile" field.')
 
-    @property
+    @functools.cached_property
     def _problem_parsers_map(self) -> Dict[QtiQuestionType, Callable[[etree._Element], dict]]:
         """
         Provide mapping between CC profile value and problem node type parser.

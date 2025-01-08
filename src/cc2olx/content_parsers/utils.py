@@ -71,8 +71,7 @@ class StaticLinkProcessor:
         for key in self._cartridge.resource_id_by_href.keys():
             if key.endswith(search_key):
                 replace_with = "/jump_to_id/{}".format(self._cartridge.resource_id_by_href[key])
-                html = html.replace(link, replace_with)
-                return html
+                return html.replace(link, replace_with)
         logger.warning("Unable to process Wiki link - %s", link)
         return html
 
