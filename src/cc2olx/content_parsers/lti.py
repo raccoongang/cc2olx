@@ -1,12 +1,11 @@
 import re
 from typing import Dict, Optional
 
-from lxml import etree
-
 from cc2olx import filesystem
 from cc2olx.content_parsers import AbstractContentParser
 from cc2olx.enums import CommonCartridgeResourceType
 from cc2olx.utils import simple_slug
+from cc2olx.xml import cc_xml
 
 
 class LtiContentParser(AbstractContentParser):
@@ -14,11 +13,6 @@ class LtiContentParser(AbstractContentParser):
     LTI resource content parser.
     """
 
-    NAMESPACES = {
-        "blti": "http://www.imsglobal.org/xsd/imsbasiclti_v1p0",
-        "lticp": "http://www.imsglobal.org/xsd/imslticp_v1p0",
-        "lticm": "http://www.imsglobal.org/xsd/imslticm_v1p0",
-    }
     DEFAULT_WIDTH = "500"
     DEFAULT_HEIGHT = "500"
 
@@ -38,57 +32,54 @@ class LtiContentParser(AbstractContentParser):
         """
         Parse LTI resource.
         """
-        res_file = resource["children"][0]
-        res_file_path = self._cartridge.build_res_file_path(res_file.href)
-        tree = filesystem.get_xml_tree(res_file_path)
+        resource_file = resource["children"][0]
+        resource_file_path = self._cartridge.build_resource_file_path(resource_file.href)
+        tree = filesystem.get_xml_tree(resource_file_path)
         root = tree.getroot()
-        title = root.find("blti:title", self.NAMESPACES).text
-        description = root.find("blti:description", self.NAMESPACES).text
-        data = {
+        title = root.title.text
+
+        return {
             "title": title,
-            "description": description,
+            "description": root.description.text,
             "launch_url": self._parse_launch_url(root),
             "height": self._parse_height(root),
             "width": self._parse_width(root),
             "custom_parameters": self._parse_custom_parameters(root),
             "lti_id": self._parse_lti_id(root, title),
         }
-        return data
 
-    def _parse_launch_url(self, resource_root: etree._Element) -> str:
+    def _parse_launch_url(self, resource_root: cc_xml.BasicLtiLink) -> str:
         """
         Parse URL to launch LTI.
         """
-        if (launch_url := resource_root.find("blti:secure_launch_url", self.NAMESPACES)) is None:
-            launch_url = resource_root.find("blti:launch_url", self.NAMESPACES)
+        if (launch_url := resource_root.secure_launch_url) is None:
+            launch_url = resource_root.launch_url
         return getattr(launch_url, "text", "")
 
-    def _parse_width(self, resource_root: etree._Element) -> str:
+    def _parse_width(self, resource_root: cc_xml.BasicLtiLink) -> str:
         """
         Parse width.
         """
-        width = resource_root.find("blti:extensions/lticm:property[@name='selection_width']", self.NAMESPACES)
-        return getattr(width, "text", self.DEFAULT_WIDTH)
+        return getattr(resource_root.width, "text", self.DEFAULT_WIDTH)
 
-    def _parse_height(self, resource_root: etree._Element) -> str:
+    def _parse_height(self, resource_root: cc_xml.BasicLtiLink) -> str:
         """
         Parse height.
         """
-        height = resource_root.find("blti:extensions/lticm:property[@name='selection_height']", self.NAMESPACES)
-        return getattr(height, "text", self.DEFAULT_HEIGHT)
+        return getattr(resource_root.height, "text", self.DEFAULT_HEIGHT)
 
-    def _parse_custom_parameters(self, resource_root: etree._Element) -> Dict[str, str]:
+    def _parse_custom_parameters(self, resource_root: cc_xml.BasicLtiLink) -> Dict[str, str]:
         """
         Parse custom parameters.
         """
-        custom = resource_root.find("blti:custom", self.NAMESPACES)
+        custom = resource_root.custom
         return {} if custom is None else {option.get("name"): option.text for option in custom}
 
-    def _parse_lti_id(self, resource_root: etree._Element, title: str) -> str:
+    def _parse_lti_id(self, resource_root: cc_xml.BasicLtiLink, title: str) -> str:
         """
         Parse LTI identifier.
 
         For Canvas flavored CC, tool_id is used as lti_id if present.
         """
-        tool_id = resource_root.find("blti:extensions/lticm:property[@name='tool_id']", self.NAMESPACES)
+        tool_id = resource_root.canvas_tool_id
         return simple_slug(title) if tool_id is None else tool_id.text

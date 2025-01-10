@@ -12,18 +12,11 @@ class DiscussionContentParser(AbstractContentParser):
     Discussion resource content parser.
     """
 
-    NAMESPACES = {
-        "imsdt_xmlv1p1": "http://www.imsglobal.org/xsd/imsccv1p1/imsdt_v1p1",
-        "imsdt_xmlv1p2": "http://www.imsglobal.org/xsd/imsccv1p2/imsdt_v1p2",
-        "imsdt_xmlv1p3": "http://www.imsglobal.org/xsd/imsccv1p3/imsdt_v1p3",
-    }
-
     def _parse_content(self, idref: Optional[str]) -> Optional[Dict[str, str]]:
         if idref:
             if resource := self._cartridge.define_resource(idref):
                 if re.match(CommonCartridgeResourceType.DISCUSSION_TOPIC, resource["type"]):
-                    data = self._parse_discussion(resource)
-                    return data
+                    return self._parse_discussion(resource)
         return None
 
     def _parse_discussion(self, resource: dict) -> Dict[str, str]:
@@ -42,9 +35,10 @@ class DiscussionContentParser(AbstractContentParser):
         """
         Parse the discussion resource file.
         """
-        tree = filesystem.get_xml_tree(self._cartridge.build_res_file_path(resource_file.href))
+        tree = filesystem.get_xml_tree(self._cartridge.build_resource_file_path(resource_file.href))
         root = tree.getroot()
-        ns = {"dt": self.NAMESPACES[resource_type]}
-        title = root.find("dt:title", ns).text
-        text = root.find("dt:text", ns).text
-        return {"title": title, "text": text}
+
+        return {
+            "title": root.get_title(resource_type).text,
+            "text": root.get_text(resource_type).text,
+        }
