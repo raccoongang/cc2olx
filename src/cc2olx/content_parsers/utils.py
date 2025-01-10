@@ -72,6 +72,7 @@ class StaticLinkProcessor:
             if key.endswith(search_key):
                 replace_with = "/jump_to_id/{}".format(self._cartridge.resource_id_by_href[key])
                 return html.replace(link, replace_with)
+
         logger.warning("Unable to process Wiki link - %s", link)
         return html
 
@@ -81,8 +82,7 @@ class StaticLinkProcessor:
         Replace $CANVAS_OBJECT_REFERENCE$ with edx /jump_to_id/<url_name>.
         """
         object_id = urllib.parse.unquote(link).replace("$CANVAS_OBJECT_REFERENCE$/quizzes/", "/jump_to_id/")
-        html = html.replace(link, object_id)
-        return html
+        return html.replace(link, object_id)
 
     @staticmethod
     def _process_ims_cc_filebase(link: str, html: str) -> str:
@@ -94,8 +94,7 @@ class StaticLinkProcessor:
         new_link = new_link.split("?")[0]
         # &amp; is not valid in an URL. But some file seem to have it when it should be &
         new_link = new_link.replace("&amp;", "&")
-        html = html.replace(link, new_link)
-        return html
+        return html.replace(link, new_link)
 
     @staticmethod
     def _process_external_tools_link(link: str, html: str) -> str:
@@ -106,5 +105,4 @@ class StaticLinkProcessor:
         # unescape query that has been HTML encoded so it can be parsed correctly
         unescaped_external_tool_query = html_parser.unescape(external_tool_query)
         external_tool_url = urllib.parse.parse_qs(unescaped_external_tool_query).get("url", [""])[0]
-        html = html.replace(link, external_tool_url)
-        return html
+        return html.replace(link, external_tool_url)

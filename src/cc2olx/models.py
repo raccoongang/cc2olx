@@ -385,7 +385,7 @@ class Cartridge:
         # TODO: find a better value for this; lifecycle.contribute_date?
         return "run"
 
-    def build_res_file_path(self, file_name: str) -> Path:
+    def build_resource_file_path(self, file_name: str) -> Path:
         """
         Build the resource file path.
         """

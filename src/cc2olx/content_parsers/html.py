@@ -43,41 +43,41 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
         """
         Parse the resource with "webcontent" type.
         """
-        res_file = resource["children"][0]
-        res_relative_link = res_file.href
-        res_file_path = self._cartridge.build_res_file_path(res_relative_link)
+        resource_file = resource["children"][0]
+        resource_relative_link = resource_file.href
+        resource_file_path = self._cartridge.build_resource_file_path(resource_relative_link)
 
-        if res_file_path.suffix == HTML_FILENAME_SUFFIX:
-            content = self._parse_webcontent_html_file(idref, res_file_path)
-        elif WEB_RESOURCES_DIR_NAME in str(res_file_path) and imghdr.what(str(res_file_path)):
-            content = self._parse_image_webcontent_from_web_resources_dir(res_file_path)
-        elif WEB_RESOURCES_DIR_NAME not in str(res_file_path):
-            content = self._parse_webcontent_outside_web_resources_dir(res_relative_link)
+        if resource_file_path.suffix == HTML_FILENAME_SUFFIX:
+            content = self._parse_webcontent_html_file(idref, resource_file_path)
+        elif WEB_RESOURCES_DIR_NAME in str(resource_file_path) and imghdr.what(str(resource_file_path)):
+            content = self._parse_image_webcontent_from_web_resources_dir(resource_file_path)
+        elif WEB_RESOURCES_DIR_NAME not in str(resource_file_path):
+            content = self._parse_webcontent_outside_web_resources_dir(resource_relative_link)
         else:
-            logger.info("Skipping webcontent: %s", res_file_path)
+            logger.info("Skipping webcontent: %s", resource_file_path)
             content = self.DEFAULT_CONTENT
 
         return content
 
     @staticmethod
-    def _parse_webcontent_html_file(idref: str, res_file_path: Path) -> Dict[str, str]:
+    def _parse_webcontent_html_file(idref: str, resource_file_path: Path) -> Dict[str, str]:
         """
         Parse webcontent HTML file.
         """
         try:
-            with open(res_file_path, encoding="utf-8") as res_file:
-                html = res_file.read()
+            with open(resource_file_path, encoding="utf-8") as resource_file:
+                html = resource_file.read()
         except:  # noqa: E722
-            logger.error("Failure reading %s from id %s", res_file_path, idref)  # noqa: E722
+            logger.error("Failure reading %s from id %s", resource_file_path, idref)  # noqa: E722
             raise
         return {"html": html}
 
     @staticmethod
-    def _parse_image_webcontent_from_web_resources_dir(res_file_path: Path) -> Dict[str, str]:
+    def _parse_image_webcontent_from_web_resources_dir(resource_file_path: Path) -> Dict[str, str]:
         """
         Parse webcontent image from "web_resources" directory.
         """
-        static_filename = str(res_file_path).split(f"{WEB_RESOURCES_DIR_NAME}/")[1]
+        static_filename = str(resource_file_path).split(f"{WEB_RESOURCES_DIR_NAME}/")[1]
         olx_static_path = OLX_STATIC_PATH_TEMPLATE.format(static_filename=static_filename)
         image_webcontent_tpl_path = settings.TEMPLATES_DIR / "image_webcontent.html"
 
@@ -87,19 +87,19 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
 
         return {"html": html}
 
-    def _parse_webcontent_outside_web_resources_dir(self, res_relative_path: str) -> Dict[str, str]:
+    def _parse_webcontent_outside_web_resources_dir(self, resource_relative_path: str) -> Dict[str, str]:
         """
         Parse webcontent located outside "web_resources" directory.
         """
         # This webcontent is outside ``web_resources`` directory
         # So we need to manually copy it to OLX_STATIC_DIR
-        self._cartridge.add_extra_static_file(res_relative_path)
-        olx_static_path = OLX_STATIC_PATH_TEMPLATE.format(static_filename=res_relative_path)
+        self._cartridge.add_extra_static_file(resource_relative_path)
+        olx_static_path = OLX_STATIC_PATH_TEMPLATE.format(static_filename=resource_relative_path)
         external_webcontent_tpl_path = settings.TEMPLATES_DIR / "external_webcontent.html"
 
         with open(external_webcontent_tpl_path, encoding="utf-8") as external_webcontent_tpl:
             tpl_content = external_webcontent_tpl.read()
-            html = tpl_content.format(olx_static_path=olx_static_path, res_relative_path=res_relative_path)
+            html = tpl_content.format(olx_static_path=olx_static_path, resource_relative_path=resource_relative_path)
 
         return {"html": html}
 

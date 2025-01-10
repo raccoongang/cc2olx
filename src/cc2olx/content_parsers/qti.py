@@ -5,14 +5,13 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, OrderedDict as OrderedDictType, Union
 
-from lxml import etree
-
 from cc2olx import filesystem
 from cc2olx.constants import QTI_RESPROCESSING_TYPES
 from cc2olx.content_parsers import AbstractContentParser
 from cc2olx.dataclasses import FibProblemRawAnswers
 from cc2olx.enums import CommonCartridgeResourceType, QtiQuestionType
 from cc2olx.exceptions import QtiError
+from cc2olx.xml import cc_xml
 
 logger = logging.getLogger()
 
@@ -22,35 +21,30 @@ class QtiContentParser(AbstractContentParser):
     QTI resource content parser.
     """
 
-    NAMESPACES = {"qti": "http://www.imsglobal.org/xsd/ims_qtiasiv1p2"}
-
     def _parse_content(self, idref: Optional[str]) -> Optional[List[dict]]:
         if idref:
             if resource := self._cartridge.define_resource(idref):
                 if re.match(CommonCartridgeResourceType.QTI_ASSESSMENT, resource["type"]):
-                    res_file = resource["children"][0]
-                    res_file_path = self._cartridge.build_res_file_path(res_file.href)
-                    return self._parse_qti(res_file_path)
+                    resource_file = resource["children"][0]
+                    resource_file_path = self._cartridge.build_resource_file_path(resource_file.href)
+                    return self._parse_qti(resource_file_path)
         return None
 
-    def _parse_qti(self, res_file_path: Path) -> List[dict]:
+    def _parse_qti(self, resource_file_path: Path) -> List[dict]:
         """
         Parse resource of ``imsqti_xmlv1p2/imscc_xmlv1p1/assessment`` type.
         """
-        tree = filesystem.get_xml_tree(res_file_path)
+        tree = filesystem.get_xml_tree(resource_file_path)
         root = tree.getroot()
-
-        # qti xml can contain multiple problems represented by <item/> elements
-        problems = root.findall(".//qti:section/qti:item", self.NAMESPACES)
 
         parsed_problems = []
 
-        for index, problem in enumerate(problems):
-            parsed_problems.append(self._parse_problem(problem, index, res_file_path))
+        for index, problem in enumerate(root.items):
+            parsed_problems.append(self._parse_problem(problem, index, resource_file_path))
 
         return parsed_problems
 
-    def _parse_problem(self, problem: etree._Element, problem_index: int, res_file_path: Path) -> dict:
+    def _parse_problem(self, problem: cc_xml.QtiItem, problem_index: int, resource_file_path: Path) -> dict:
         """
         Parse a QTI item.
 
@@ -66,7 +60,7 @@ class QtiContentParser(AbstractContentParser):
         if title := attributes.get("title"):
             data["title"] = title
 
-        cc_profile = self._parse_problem_profile(problem)
+        cc_profile = problem.profile
         data["cc_profile"] = cc_profile
 
         parse_problem = self._problem_parsers_map.get(cc_profile)
@@ -79,42 +73,12 @@ class QtiContentParser(AbstractContentParser):
         except NotImplementedError:
             logger.info("Problem with ID %s can't be converted.", problem.attrib.get("ident"))
             logger.info("    Profile %s is not supported.", cc_profile)
-            logger.info("    At file %s.", res_file_path)
+            logger.info("    At file %s.", resource_file_path)
 
         return data
 
-    def _parse_problem_profile(self, problem: etree._Element) -> str:
-        """
-        Return ``cc_profile`` value from problem metadata.
-
-        This field is mandatory for problem, so the exception is thrown if
-        it's not present.
-
-        Example of metadata structure:
-        ```
-        <itemmetadata>
-          <qtimetadata>
-            <qtimetadatafield>
-              <fieldlabel>cc_profile</fieldlabel>
-              <fieldentry>cc.true_false.v0p1</fieldentry>
-            </qtimetadatafield>
-          </qtimetadata>
-        </itemmetadata>
-        ```
-        """
-        metadata = problem.findall("qti:itemmetadata/qti:qtimetadata/qti:qtimetadatafield", self.NAMESPACES)
-
-        for field in metadata:
-            label = field.find("qti:fieldlabel", self.NAMESPACES).text
-            entry = field.find("qti:fieldentry", self.NAMESPACES).text
-
-            if label == "cc_profile":
-                return entry
-
-        raise ValueError('Problem metadata must contain "cc_profile" field.')
-
     @functools.cached_property
-    def _problem_parsers_map(self) -> Dict[QtiQuestionType, Callable[[etree._Element], dict]]:
+    def _problem_parsers_map(self) -> Dict[QtiQuestionType, Callable[[cc_xml.QtiItem], dict]]:
         """
         Provide mapping between CC profile value and problem node type parser.
 
@@ -133,7 +97,7 @@ class QtiContentParser(AbstractContentParser):
 
     def _parse_fixed_answer_question_responses(
         self,
-        presentation: etree._Element,
+        presentation: cc_xml.QtiPresentation,
     ) -> OrderedDictType[str, Dict[str, Union[bool, str]]]:
         """
         Provide mapping with response IDs as keys and response data as values.
@@ -161,16 +125,13 @@ class QtiContentParser(AbstractContentParser):
         """
         responses = OrderedDict()
 
-        for response in presentation.findall("qti:response_lid/qti:render_choice/qti:response_label", self.NAMESPACES):
+        for response in presentation.response_labels:
             response_id = response.attrib["ident"]
-            responses[response_id] = {
-                "text": response.find("qti:material/qti:mattext", self.NAMESPACES).text or "",
-                "correct": False,
-            }
+            responses[response_id] = {"text": response.mattext.text or "", "correct": False}
 
         return responses
 
-    def _mark_correct_responses(self, resprocessing: etree._Element, responses: OrderedDict) -> None:
+    def _mark_correct_responses(self, resprocessing: cc_xml.QtiResprocessing, responses: OrderedDict) -> None:
         """
         Add the information about correctness to responses data.
 
@@ -238,12 +199,12 @@ class QtiContentParser(AbstractContentParser):
         conditions can be arbitrarily nested, and score can be computed by some formula, so to
         implement 100% conversion we need to write new XBlock.
         """
-        for respcondition in resprocessing.findall("qti:respcondition", self.NAMESPACES):
-            correct_answers = respcondition.findall("qti:conditionvar/qti:varequal", self.NAMESPACES)
+        for respcondition in resprocessing.respconditions:
+            correct_answers = respcondition.varequals
 
             if len(correct_answers) == 0:
-                correct_answers = respcondition.findall("qti:conditionvar/qti:and/qti:varequal", self.NAMESPACES)
-                correct_answers += respcondition.findall("qti:conditionvar/qti:or/qti:varequal", self.NAMESPACES)
+                correct_answers = respcondition.and_varequals
+                correct_answers += respcondition.or_varequals
 
             for answer in correct_answers:
                 responses[answer.text]["correct"] = True
@@ -251,45 +212,34 @@ class QtiContentParser(AbstractContentParser):
             if respcondition.attrib.get("continue", "No") == "No":
                 break
 
-    def _parse_multiple_choice_problem(self, problem: etree._Element) -> dict:
+    def _parse_multiple_choice_problem(self, problem: cc_xml.QtiItem) -> dict:
         """
         Provide the multiple choice problem data.
         """
-        data = {}
+        choices = self._parse_fixed_answer_question_responses(problem.presentation)
+        self._mark_correct_responses(problem.resprocessing, choices)
 
-        presentation = problem.find("qti:presentation", self.NAMESPACES)
-        resprocessing = problem.find("qti:resprocessing", self.NAMESPACES)
+        return {
+            "problem_description": problem.description,
+            "choices": choices,
+        }
 
-        data["problem_description"] = presentation.find("qti:material/qti:mattext", self.NAMESPACES).text
-
-        data["choices"] = self._parse_fixed_answer_question_responses(presentation)
-        self._mark_correct_responses(resprocessing, data["choices"])
-
-        return data
-
-    def _parse_multiple_response_problem(self, problem: etree._Element) -> dict:
+    def _parse_multiple_response_problem(self, problem: cc_xml.QtiItem) -> dict:
         """
         Provide the multiple response problem data.
         """
         return self._parse_multiple_choice_problem(problem)
 
-    def _parse_fib_problem(self, problem: etree._Element) -> dict:
+    def _parse_fib_problem(self, problem: cc_xml.QtiItem) -> dict:
         """
         Provide the Fill-In-The-Blank problem data.
         """
         return {
-            "problem_description": self._parse_fib_problem_description(problem),
+            "problem_description": problem.description,
             **self._parse_fib_problem_answers(problem),
         }
 
-    def _parse_fib_problem_description(self, problem: etree._Element) -> str:
-        """
-        Parse the Fill-In-The-Blank problem description.
-        """
-        presentation = problem.find("qti:presentation", self.NAMESPACES)
-        return presentation.find("qti:material/qti:mattext", self.NAMESPACES).text
-
-    def _parse_fib_problem_answers(self, problem: etree._Element) -> dict:
+    def _parse_fib_problem_answers(self, problem: cc_xml.QtiItem) -> dict:
         """
         Parse the Fill-In-The-Blank problem answers data.
         """
@@ -303,20 +253,20 @@ class QtiContentParser(AbstractContentParser):
             data.update(self._build_fib_problem_exact_answers(raw_answers))
         return data
 
-    def _parse_fib_problem_raw_answers(self, problem: etree._Element) -> FibProblemRawAnswers:
+    def _parse_fib_problem_raw_answers(self, problem: cc_xml.QtiItem) -> FibProblemRawAnswers:
         """
         Parse the Fill-In-The-Blank problem answers without processing.
         """
         exact_answers = []
         answer_patterns = []
 
-        resprocessing = problem.find("qti:resprocessing", self.NAMESPACES)
+        resprocessing = problem.resprocessing
 
-        for respcondition in resprocessing.findall("qti:respcondition", self.NAMESPACES):
-            for varequal in respcondition.findall("qti:conditionvar/qti:varequal", self.NAMESPACES):
+        for respcondition in resprocessing.respconditions:
+            for varequal in respcondition.varequals:
                 exact_answers.append(varequal.text)
 
-            for varsubstring in respcondition.findall("qti:conditionvar/qti:varsubstring", self.NAMESPACES):
+            for varsubstring in respcondition.varsubstrings:
                 answer_patterns.append(varsubstring.text)
 
             if respcondition.attrib.get("continue", "No") == "No":
@@ -351,64 +301,50 @@ class QtiContentParser(AbstractContentParser):
             "additional_answers": exact_answers,
         }
 
-    def _parse_essay_problem(self, problem: etree._Element) -> dict:
+    def _parse_essay_problem(self, problem: cc_xml.QtiItem) -> dict:
         """
         Parse `cc.essay.v0p1` problem type.
 
         Provide a dictionary with presentation & sample solution if exists.
         """
-        data = {
-            "problem_description": self._parse_essay_description(problem),
-            **self._parse_essay_feedback(problem),
-        }
+        data = {"problem_description": problem.description, **self._parse_essay_feedback(problem)}
 
         if sample_solution := self._parse_essay_sample_solution(problem):
             data["sample_solution"] = sample_solution
 
         return data
 
-    def _parse_essay_description(self, problem: etree._Element) -> str:
-        """
-        Parse the essay description.
-        """
-        presentation = problem.find("qti:presentation", self.NAMESPACES)
-        return presentation.find("qti:material/qti:mattext", self.NAMESPACES).text
-
-    def _parse_essay_sample_solution(self, problem: etree._Element) -> Optional[str]:
+    def _parse_essay_sample_solution(self, problem: cc_xml.QtiItem) -> Optional[str]:
         """
         Parse the essay sample solution.
         """
-        if (solution := problem.find("qti:itemfeedback/qti:solution", self.NAMESPACES)) is not None:
-            sample_solution_selector = "qti:solutionmaterial//qti:material//qti:mattext"
-            return solution.find(sample_solution_selector, self.NAMESPACES).text
+        if (solution := problem.solution) is not None:
+            return solution.mattext.text
         return None
 
-    def _parse_essay_feedback(self, problem: etree._Element) -> dict:
+    def _parse_essay_feedback(self, problem: cc_xml.QtiItem) -> dict:
         """
         Parse the essay feedback.
         """
         data = {}
-        itemfeedback = problem.find("qti:itemfeedback", self.NAMESPACES)
 
-        if itemfeedback is not None:
+        if problem.get_itemfeedback() is not None:
             for resp_type in QTI_RESPROCESSING_TYPES:
-                response_text = self._parse_essay_response_processing(problem, resp_type)
-                if response_text:
+                if response_text := self._parse_essay_response_text(problem, resp_type):
                     data[resp_type] = response_text
 
         return data
 
-    def _parse_essay_response_processing(self, problem: etree._Element, resp_type: str) -> Optional[str]:
+    def _parse_essay_response_text(self, problem: cc_xml.QtiItem, resp_type: str) -> Optional[str]:
         """
-        Parse the essay response processing.
+        Parse the essay response text.
         """
-        respconditions = problem.find("qti:resprocessing/qti:respcondition", self.NAMESPACES)
-        if respconditions.find(f"qti:displayfeedback[@linkrefid='{resp_type}']", self.NAMESPACES) is not None:
-            text_selector = f"qti:itemfeedback[@ident='{resp_type}']/qti:flow_mat/qti:material/qti:mattext"
-            return problem.find(text_selector, self.NAMESPACES).text
+        respcondition = problem.resprocessing.respconditions[0]
+        if respcondition.get_display_feedback(resp_type) is not None:
+            return problem.get_itemfeedback(resp_type).flow_mat.material.mattext.text
         return None
 
-    def _parse_pattern_match_problem(self, problem: etree._Element) -> dict:
+    def _parse_pattern_match_problem(self, problem: cc_xml.QtiItem) -> dict:
         """
         Provide the pattern match problem data.
         """

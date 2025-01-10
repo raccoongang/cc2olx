@@ -9,7 +9,7 @@ class CommonCartridgeResourceType(str, Enum):
     """
 
     WEB_CONTENT = "webcontent"
-    WEB_LINK = r"^imswl_xmlv(?P<major_version>\d+)+p(?P<minor_version>\d+)$"
+    WEB_LINK = r"^imswl_xmlv\d+p\d+$"
     LTI_LINK = r"^imsbasiclti_xmlv\d+p\d+$"
     QTI_ASSESSMENT = r"^imsqti_xmlv\d+p\d+/imscc_xmlv\d+p\d+/assessment$"
     DISCUSSION_TOPIC = r"^imsdt_xmlv\d+p\d+$"

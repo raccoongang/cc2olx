@@ -83,7 +83,7 @@ class TestHtmlContentParser:
     @patch("cc2olx.content_parsers.html.imghdr.what", Mock(return_value=None))
     def test_parse_webcontent_returns_default_content_for_unknown_webcontent_type_from_web_resources_dir(self):
         parser = HtmlContentParser(
-            Mock(build_res_file_path=Mock(return_value=Path("web_resources/unknown/path/to/file.ext")))
+            Mock(build_resource_file_path=Mock(return_value=Path("web_resources/unknown/path/to/file.ext")))
         )
         expected_content = {"html": "<p>MISSING CONTENT</p>"}
 
@@ -94,24 +94,24 @@ class TestHtmlContentParser:
     @patch("cc2olx.content_parsers.html.logger")
     @patch("cc2olx.content_parsers.html.imghdr.what", Mock(return_value=None))
     def test_parse_webcontent_logs_skipping_webcontent(self, logger_mock):
-        res_file_path = Path("web_resources/unknown/path/to/file.ext")
-        parser = HtmlContentParser(Mock(build_res_file_path=Mock(return_value=res_file_path)))
+        resource_file_path = Path("web_resources/unknown/path/to/file.ext")
+        parser = HtmlContentParser(Mock(build_resource_file_path=Mock(return_value=resource_file_path)))
 
         parser._parse_webcontent(Mock(), MagicMock())
 
-        logger_mock.info.assert_called_once_with("Skipping webcontent: %s", res_file_path)
+        logger_mock.info.assert_called_once_with("Skipping webcontent: %s", resource_file_path)
 
     @patch("cc2olx.content_parsers.html.logger")
     @patch("cc2olx.content_parsers.html.open", Mock(side_effect=FileNotFoundError))
     def test_webcontent_html_file_reading_failure_is_logged(self, logger_mock):
         parser = HtmlContentParser(Mock())
         idref_mock = Mock()
-        res_file_path_mock = Mock()
+        resource_file_path_mock = Mock()
 
         with pytest.raises(FileNotFoundError):
-            parser._parse_webcontent_html_file(idref_mock, res_file_path_mock)
+            parser._parse_webcontent_html_file(idref_mock, resource_file_path_mock)
 
-        logger_mock.error.assert_called_once_with("Failure reading %s from id %s", res_file_path_mock, idref_mock)
+        logger_mock.error.assert_called_once_with("Failure reading %s from id %s", resource_file_path_mock, idref_mock)
 
     @pytest.mark.parametrize(
         "resource,message",
