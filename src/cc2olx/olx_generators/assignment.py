@@ -21,27 +21,20 @@ class AssignmentOlxGenerator(AbstractOlxGenerator):
             "openassessment",
             [
                 el("title", content["title"]),
-                el("assessments", [
-                    el(
-                        "assessment",
-                        None,
-                        {"name": "staff-assessment", "required": "True"}
-                    )
-                ]),
-                el("prompts", [
-                    el("prompt", [
-                        el("description", content["prompt"])
-                    ])
-                ]),
-                el("rubric", [
-                    *generate_default_ora_criteria(),
-                    el(
-                        "feedbackprompt",
-                        "(Optional) What aspects of this response stood out to you? What did it do well? How could it "
-                        "be improved?",
-                    ),
-                    el("feedback_default_text", "I think that this response..."),
-                ])
+                el("assessments", [el("assessment", None, {"name": "staff-assessment", "required": "True"})]),
+                el("prompts", [el("prompt", [el("description", content["prompt"])])]),
+                el(
+                    "rubric",
+                    [
+                        *generate_default_ora_criteria(),
+                        el(
+                            "feedbackprompt",
+                            "(Optional) What aspects of this response stood out to you? What did it do well? How could "
+                            "it be improved?",
+                        ),
+                        el("feedback_default_text", "I think that this response..."),
+                    ],
+                ),
             ],
             self._generate_openassessment_attributes(content),
         )

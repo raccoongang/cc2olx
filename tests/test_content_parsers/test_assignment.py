@@ -13,7 +13,7 @@ class TestAssignmentContentParser:
             (True, False, "required"),
             (False, True, ""),
             (False, False, "required"),
-        ]
+        ],
     )
     def test_get_text_response_results(
         self,
@@ -34,7 +34,7 @@ class TestAssignmentContentParser:
             (True, False, ""),
             (False, True, "required"),
             (False, False, ""),
-        ]
+        ],
     )
     def test_get_file_upload_response_results(
         self,

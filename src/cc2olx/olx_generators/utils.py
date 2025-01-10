@@ -27,7 +27,7 @@ def generate_default_ora_criteria() -> List[xml.dom.minidom.Element]:
                         el(
                             "explanation",
                             "Difficult for the reader to discern the main idea. Too brief or too repetitive to "
-                            "establish or maintain a focus."
+                            "establish or maintain a focus.",
                         ),
                     ],
                     {"points": "0"},
