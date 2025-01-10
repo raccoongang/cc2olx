@@ -1,5 +1,6 @@
 # Core requirements for this package
 
+attrs
 lxml
 requests
 youtube-dl
