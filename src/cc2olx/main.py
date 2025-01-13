@@ -1,10 +1,14 @@
 import logging
+import os
 import shutil
 import sys
 import tempfile
 from pathlib import Path
 
-from cc2olx import filesystem, olx, settings
+import django
+from django.conf import settings
+
+from cc2olx import filesystem, olx
 from cc2olx.cli import parse_args, RESULT_TYPE_FOLDER, RESULT_TYPE_ZIP
 from cc2olx.constants import OLX_STATIC_DIR
 from cc2olx.models import Cartridge
@@ -46,6 +50,8 @@ def convert_one_file(input_file, workspace, link_file=None, passport_file=None):
 
 
 def main():
+    initialize_django()
+
     args = parse_args()
     options = parse_options(args)
 
@@ -76,6 +82,14 @@ def main():
     logger.info("Conversion completed")
 
     return 0
+
+
+def initialize_django():
+    """
+    Initialize the Django package.
+    """
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cc2olx.settings")
+    django.setup()
 
 
 if __name__ == "__main__":

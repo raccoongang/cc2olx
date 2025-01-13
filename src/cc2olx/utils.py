@@ -4,9 +4,6 @@ import logging
 import string
 import csv
 import re
-import sys
-from importlib import import_module
-from typing import Type
 
 from cc2olx.constants import CDATA_PATTERN
 
@@ -126,35 +123,3 @@ def clean_from_cdata(xml_string: str) -> str:
         str: cleaned XML string.
     """
     return re.sub(CDATA_PATTERN, r"\g<content>", xml_string, flags=re.DOTALL)
-
-
-def cached_import(module_path: str, class_name: str) -> Type:
-    """
-    Provide the module from the cache or import it if it is not already loaded.
-    """
-    # Check whether module is loaded and fully initialized.
-    if not (
-        (module := sys.modules.get(module_path))
-        and (spec := getattr(module, "__spec__", None))
-        and getattr(spec, "_initializing", False) is False
-    ):
-        module = import_module(module_path)
-    return getattr(module, class_name)
-
-
-def import_string(dotted_path: str) -> Type:
-    """
-    Import a dotted module path.
-
-    Provide the attribute/class designated by the last name in the path.
-    Raise ImportError if the import failed.
-    """
-    try:
-        module_path, class_name = dotted_path.rsplit(".", 1)
-    except ValueError as err:
-        raise ImportError("%s doesn't look like a module path" % dotted_path) from err
-
-    try:
-        return cached_import(module_path, class_name)
-    except AttributeError as err:
-        raise ImportError('Module "%s" does not define a "%s" attribute/class' % (module_path, class_name)) from err

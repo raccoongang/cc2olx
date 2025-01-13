@@ -12,3 +12,6 @@ CONTENT_PROCESSORS = [
     "cc2olx.content_processors.DiscussionContentProcessor",
     "cc2olx.content_processors.HtmlContentProcessor",
 ]
+
+USE_I18N = False
+USE_TZ = False

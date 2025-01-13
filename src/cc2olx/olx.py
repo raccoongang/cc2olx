@@ -3,11 +3,13 @@ import logging
 import xml.dom.minidom
 from typing import List, Type
 
-from cc2olx import settings
+from django.conf import settings
+from django.utils.module_loading import import_string
+
 from cc2olx.content_processors import AbstractContentProcessor
 from cc2olx.dataclasses import OlxGeneratorContext
 from cc2olx.iframe_link_parser import KalturaIframeLinkParser
-from cc2olx.utils import import_string, passport_file_parser
+from cc2olx.utils import passport_file_parser
 
 logger = logging.getLogger()
 

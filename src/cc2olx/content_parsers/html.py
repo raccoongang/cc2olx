@@ -4,7 +4,8 @@ import re
 from pathlib import Path
 from typing import Dict, Optional
 
-from cc2olx import settings
+from django.conf import settings
+
 from cc2olx.constants import LINK_HTML, OLX_STATIC_PATH_TEMPLATE, WEB_RESOURCES_DIR_NAME
 from cc2olx.content_parsers import AbstractContentParser
 from cc2olx.content_parsers.mixins import WebLinkParserMixin
