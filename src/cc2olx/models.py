@@ -295,6 +295,16 @@ class Cartridge:
                 output.extend(leaves)
         return output
 
+    def define_resource(self, idref):
+        """
+        Define a resource by its identifier.
+        """
+        resource = self.resources_by_id.get(idref)
+        if resource is None and self.is_canvas_flavor:
+            module_item_idref = self.module_meta.get_identifierref(idref)
+            resource = self.resources_by_id.get(module_item_idref)
+        return resource
+
     def get_resource_content(self, identifier):
         """
         Get the resource named by `identifier`.
@@ -466,6 +476,12 @@ class Cartridge:
         # TODO: find a better value for this; lifecycle.contribute_date?
         return "run"
 
+    def build_resource_file_path(self, file_name: str) -> Path:
+        """
+        Build the resource file path.
+        """
+        return self.directory / file_name
+
     def _extract(self):
         path_extracted = filesystem.unzip_directory(self.file_path, self.workspace)
         self.directory = path_extracted
@@ -497,11 +513,11 @@ class Cartridge:
         )
 
     def _parse_manifest(self, node):
-        data = dict()
-        data["metadata"] = self._parse_metadata(node)
-        data["organizations"] = self._parse_organizations(node)
-        data["resources"] = self._parse_resources(node)
-        return data
+        return {
+            "metadata": self._parse_metadata(node),
+            "organizations": self._parse_organizations(node),
+            "resources": self._parse_resources(node),
+        }
 
     def _clean_manifest(self, node):
         """
