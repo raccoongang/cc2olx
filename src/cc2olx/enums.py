@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Set
 
 
 class CommonCartridgeResourceType(str, Enum):
@@ -13,6 +14,7 @@ class CommonCartridgeResourceType(str, Enum):
     LTI_LINK = r"^imsbasiclti_xmlv\d+p\d+$"
     QTI_ASSESSMENT = r"^imsqti_xmlv\d+p\d+/imscc_xmlv\d+p\d+/assessment$"
     DISCUSSION_TOPIC = r"^imsdt_xmlv\d+p\d+$"
+    ASSIGNMENT = r"^assignment_xmlv\d+p\d+$"
 
 
 class QtiQuestionType(str, Enum):
@@ -26,3 +28,21 @@ class QtiQuestionType(str, Enum):
     ESSAY = "cc.essay.v0p1"
     BOOLEAN = "cc.true_false.v0p1"
     PATTERN_MATCH = "cc.pattern_match.v0p1"
+
+
+class AssignmentSubmissionFormatType(str, Enum):
+    """
+    Enumerate possible submission format types for CC assignments.
+    """
+
+    FILE = "file"
+    HTML = "html"
+    TEXT = "text"
+    URL = "url"
+
+    @classmethod
+    def get_not_file_types(cls) -> Set["AssignmentSubmissionFormatType"]:
+        """
+        Provide submission format types except file.
+        """
+        return {cls.HTML, cls.TEXT, cls.URL}
