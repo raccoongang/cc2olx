@@ -17,6 +17,7 @@ Converted:
 - LTI links
 - QTI assessments
 - PDF files
+- Google document URLs
 
 Not converted:
 
@@ -74,6 +75,7 @@ used. The argument values correspond to the xBlock names to specify in
 Supported Custom xBlocks:
 
 - `pdf <https://github.com/raccoongang/xblock-pdf>`_
+- `google-document <https://github.com/openedx/xblock-google-drive>`_
 
 Argument usage example::
 
