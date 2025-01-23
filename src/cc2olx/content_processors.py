@@ -96,3 +96,12 @@ class PdfContentProcessor(AbstractContentProcessor):
 
     content_parser_class = content_parsers.PdfContentParser
     olx_generator_class = olx_generators.PdfOlxGenerator
+
+
+class GoogleDocumentContentProcessor(AbstractContentProcessor):
+    """
+    Google document content processor.
+    """
+
+    content_parser_class = content_parsers.GoogleDocumentContentParser
+    olx_generator_class = olx_generators.GoogleDocumentOlxGenerator
