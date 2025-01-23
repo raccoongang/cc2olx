@@ -1,3 +1,5 @@
+from typing import Set
+
 from enum import Enum
 
 
@@ -26,3 +28,20 @@ class QtiQuestionType(str, Enum):
     ESSAY = "cc.essay.v0p1"
     BOOLEAN = "cc.true_false.v0p1"
     PATTERN_MATCH = "cc.pattern_match.v0p1"
+
+
+class SupportedCustomBlockContentType(str, Enum):
+    """
+    Enumerate supported custom block content types.
+    """
+
+    PDF = "pdf"
+
+    @property
+    def file_extensions(self) -> Set[str]:
+        """
+        Provide file extensions the block content type supports.
+        """
+        return {
+            SupportedCustomBlockContentType.PDF: {".pdf"},
+        }[self]

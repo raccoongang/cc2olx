@@ -1,5 +1,5 @@
 OLX_STATIC_DIR = "static"
-OLX_STATIC_PATH_TEMPLATE = f"/{OLX_STATIC_DIR}/{{static_filename}}"
+OLX_STATIC_PATH_TEMPLATE = f"/{OLX_STATIC_DIR}/{{static_file_path}}"
 WEB_RESOURCES_DIR_NAME = "web_resources"
 
 LINK_HTML = '<a href="{url}">{text}</a>'

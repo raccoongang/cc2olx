@@ -5,7 +5,12 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 
 LOG_FORMAT = "{%(filename)s:%(lineno)d} - %(message)s"
 
+CUSTOM_BLOCKS_CONTENT_PROCESSORS = [
+    "cc2olx.content_processors.PdfContentProcessor",
+]
+
 CONTENT_PROCESSORS = [
+    *CUSTOM_BLOCKS_CONTENT_PROCESSORS,
     "cc2olx.content_processors.VideoContentProcessor",
     "cc2olx.content_processors.LtiContentProcessor",
     "cc2olx.content_processors.QtiContentProcessor",

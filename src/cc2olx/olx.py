@@ -29,7 +29,14 @@ class OlxExport:
     OLX guide: https://edx.readthedocs.io/projects/edx-open-learning-xml/en/latest/
     """
 
-    def __init__(self, cartridge, link_file=None, passport_file=None, relative_links_source=None):
+    def __init__(
+        self,
+        cartridge,
+        link_file=None,
+        passport_file=None,
+        relative_links_source=None,
+        content_types_with_custom_blocks=None,
+    ):
         self.cartridge = cartridge
         self.doc = None
         self.link_file = link_file
@@ -39,6 +46,7 @@ class OlxExport:
         self.lti_consumer_present = False
         self.lti_consumer_ids = set()
         self._content_processor_types = self._load_content_processor_types()
+        self._content_types_with_custom_blocks = content_types_with_custom_blocks or []
 
     @staticmethod
     def _load_content_processor_types() -> List[Type[AbstractContentProcessor]]:
@@ -101,17 +109,21 @@ class OlxExport:
                         "name": "Progress",
                         "type": "progress",
                     },
-                ]
+                ],
+                "advanced_modules": [],
             }
         }
 
         lti_passports = self._get_lti_passport_list()
 
         if self.lti_consumer_ids:
-            policy["course/course"]["advanced_modules"] = ["lti_consumer"]
+            policy["course/course"]["advanced_modules"].append("lti_consumer")
 
         if len(lti_passports):
             policy["course/course"]["lti_passports"] = lti_passports
+
+        for xblock_name in self._content_types_with_custom_blocks:
+            policy["course/course"]["advanced_modules"].append(xblock_name)
 
         return json.dumps(policy)
 
@@ -192,6 +204,7 @@ class OlxExport:
             iframe_link_parser=self.iframe_link_parser,
             lti_consumer_ids=self.lti_consumer_ids,
             relative_links_source=self.relative_links_source,
+            content_types_with_custom_blocks=self._content_types_with_custom_blocks,
         )
 
         for processor_type in self._content_processor_types:

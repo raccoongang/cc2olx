@@ -377,7 +377,7 @@ class Cartridge:
 
     def build_resource_file_path(self, file_name: str) -> Path:
         """
-        Build the resource file path.
+        Build the absolute file path of unpacked resource in the filesystem.
         """
         return self.directory / file_name
 
