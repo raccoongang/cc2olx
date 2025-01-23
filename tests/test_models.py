@@ -37,7 +37,7 @@ def test_load_manifest_extracted(imscc_file, options, temp_workspace_dir):
         "version": cartridge_version,
     }
 
-    assert len(cartridge.resources) == 18
+    assert len(cartridge.resources) == 20
     assert len(cartridge.resources[0]["children"]) == 6
     assert isinstance(cartridge.resources[0]["children"][0], ResourceFile)
 
@@ -176,8 +176,20 @@ def test_cartridge_normalize(imscc_file, options):
                             {
                                 "children": [
                                     {
+                                        "identifier": "pdf_web_resource",
+                                        "identifierref": "resource_pdf_1",
+                                        "title": "PDF from Web Resources",
+                                    }
+                                ],
+                                "identifier": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                                "identifierref": None,
+                                "title": "PDF from Web Resources",
+                            },
+                            {
+                                "children": [
+                                    {
                                         "identifier": "pdf_outside_resource",
-                                        "identifierref": "pdf_dependency",
+                                        "identifierref": "resource_pdf_2",
                                         "title": "PDF Outside of Web Resources",
                                     }
                                 ],
@@ -196,6 +208,18 @@ def test_cartridge_normalize(imscc_file, options):
                                 "identifier": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
                                 "identifierref": None,
                                 "title": "Web Link Content",
+                            },
+                            {
+                                "children": [
+                                    {
+                                        "identifier": "web_link_to_pdf",
+                                        "identifierref": "resource_web_link_to_pdf",
+                                        "title": "Web Link to PDF file",
+                                    }
+                                ],
+                                "identifier": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                                "identifierref": None,
+                                "title": "Web Link to PDF file",
                             },
                         ],
                         "identifier": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",

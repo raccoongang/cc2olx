@@ -4,8 +4,10 @@ from cc2olx.content_parsers import LtiContentParser
 
 
 class TestLtiContentParser:
+    parser_type = LtiContentParser
+
     def test_parsing_results(self, cartridge):
-        parser = LtiContentParser(cartridge, Mock())
+        parser = self.parser_type(cartridge, Mock())
 
         assert parser.parse("resource_2_lti") == {
             "title": "Learning Tools Interoperability",
