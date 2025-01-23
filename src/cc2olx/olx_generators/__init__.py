@@ -1,5 +1,6 @@
 from cc2olx.olx_generators.abc import AbstractOlxGenerator
 from cc2olx.olx_generators.discussion import DiscussionOlxGenerator
+from cc2olx.olx_generators.google_document import GoogleDocumentOlxGenerator
 from cc2olx.olx_generators.html import HtmlOlxGenerator
 from cc2olx.olx_generators.lti import LtiOlxGenerator
 from cc2olx.olx_generators.pdf import PdfOlxGenerator
@@ -9,6 +10,7 @@ from cc2olx.olx_generators.video import VideoOlxGenerator
 __all__ = [
     "AbstractOlxGenerator",
     "DiscussionOlxGenerator",
+    "GoogleDocumentOlxGenerator",
     "HtmlOlxGenerator",
     "LtiOlxGenerator",
     "PdfOlxGenerator",

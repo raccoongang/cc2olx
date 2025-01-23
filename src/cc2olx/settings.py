@@ -7,6 +7,7 @@ LOG_FORMAT = "{%(filename)s:%(lineno)d} - %(message)s"
 
 CUSTOM_BLOCKS_CONTENT_PROCESSORS = [
     "cc2olx.content_processors.PdfContentProcessor",
+    "cc2olx.content_processors.GoogleDocumentContentProcessor",
 ]
 
 CONTENT_PROCESSORS = [
