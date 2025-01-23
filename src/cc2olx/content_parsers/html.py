@@ -6,9 +6,10 @@ from typing import Dict, Optional
 
 from django.conf import settings
 
-from cc2olx.constants import LINK_HTML, OLX_STATIC_PATH_TEMPLATE, WEB_RESOURCES_DIR_NAME
+from cc2olx.constants import LINK_HTML
 from cc2olx.content_parsers import AbstractContentParser
 from cc2olx.content_parsers.mixins import WebLinkParserMixin
+from cc2olx.content_parsers.utils import WebContent
 from cc2olx.enums import CommonCartridgeResourceType
 
 logger = logging.getLogger()
@@ -44,16 +45,16 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
         """
         Parse the resource with "webcontent" type.
         """
-        resource_file = resource["children"][0]
-        resource_relative_link = resource_file.href
-        resource_file_path = self._cartridge.build_resource_file_path(resource_relative_link)
+        web_content = WebContent(self._cartridge, resource["children"][0])
+        resource_file_path = web_content.resource_file_path
+        is_web_content_from_web_resources_dir = web_content.is_from_web_resources_dir()
 
         if resource_file_path.suffix == HTML_FILENAME_SUFFIX:
             content = self._parse_webcontent_html_file(idref, resource_file_path)
-        elif WEB_RESOURCES_DIR_NAME in str(resource_file_path) and imghdr.what(str(resource_file_path)):
-            content = self._parse_image_webcontent_from_web_resources_dir(resource_file_path)
-        elif WEB_RESOURCES_DIR_NAME not in str(resource_file_path):
-            content = self._parse_webcontent_outside_web_resources_dir(resource_relative_link)
+        elif is_web_content_from_web_resources_dir and imghdr.what(str(resource_file_path)):
+            content = self._parse_image_webcontent_from_web_resources_dir(web_content)
+        elif not is_web_content_from_web_resources_dir:
+            content = self._parse_webcontent_outside_web_resources_dir(web_content)
         else:
             logger.info("Skipping webcontent: %s", resource_file_path)
             content = self.DEFAULT_CONTENT
@@ -73,28 +74,31 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
             raise
         return {"html": html}
 
-    def _parse_image_webcontent_from_web_resources_dir(self, resource_file_path: Path) -> Dict[str, str]:
+    def _parse_image_webcontent_from_web_resources_dir(self, web_content: WebContent) -> Dict[str, str]:
         """
         Parse webcontent image from "web_resources" directory.
         """
-        static_filename = str(resource_file_path).split(f"{WEB_RESOURCES_DIR_NAME}/")[1]
-        olx_static_path = OLX_STATIC_PATH_TEMPLATE.format(static_filename=static_filename)
-        self._cartridge.olx_to_original_static_file_paths.add_web_resource_path(olx_static_path, resource_file_path)
+        olx_static_path = web_content.olx_static_path
+        self._cartridge.olx_to_original_static_file_paths.add_web_resource_path(
+            olx_static_path,
+            web_content.resource_file_path,
+        )
         image_webcontent_tpl_path = settings.TEMPLATES_DIR / "image_webcontent.html"
 
         with open(image_webcontent_tpl_path, encoding="utf-8") as image_webcontent_tpl:
             tpl_content = image_webcontent_tpl.read()
-            html = tpl_content.format(olx_static_path=olx_static_path, static_filename=static_filename)
+            html = tpl_content.format(olx_static_path=olx_static_path, static_file_path=web_content.static_file_path)
 
         return {"html": html}
 
-    def _parse_webcontent_outside_web_resources_dir(self, resource_relative_path: str) -> Dict[str, str]:
+    def _parse_webcontent_outside_web_resources_dir(self, web_content: WebContent) -> Dict[str, str]:
         """
         Parse webcontent located outside "web_resources" directory.
         """
+        olx_static_path = web_content.olx_static_path
+        resource_relative_path = web_content.resource_relative_path
         # This webcontent is outside ``web_resources`` directory
         # So we need to manually copy it to OLX_STATIC_DIR
-        olx_static_path = OLX_STATIC_PATH_TEMPLATE.format(static_filename=resource_relative_path)
         self._cartridge.olx_to_original_static_file_paths.add_extra_path(olx_static_path, resource_relative_path)
         external_webcontent_tpl_path = settings.TEMPLATES_DIR / "external_webcontent.html"
 

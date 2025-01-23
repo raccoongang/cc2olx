@@ -87,3 +87,12 @@ class DiscussionContentProcessor(AbstractContentProcessor):
 
     content_parser_class = content_parsers.DiscussionContentParser
     olx_generator_class = olx_generators.DiscussionOlxGenerator
+
+
+class PdfContentProcessor(AbstractContentProcessor):
+    """
+    PDF content processor.
+    """
+
+    content_parser_class = content_parsers.PdfContentParser
+    olx_generator_class = olx_generators.PdfOlxGenerator

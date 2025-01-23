@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 from collections import ChainMap
+from types import MappingProxyType
 from typing import Callable, Dict, List, NamedTuple, Optional, Set
 
 import attrs
@@ -7,31 +7,40 @@ import attrs
 from cc2olx.iframe_link_parser import IframeLinkParser
 
 
-@dataclass
+@attrs.define(slots=False)
 class OlxToOriginalStaticFilePaths:
     """
     Provide OLX static file to Common cartridge static file mappings.
     """
 
     # Static files from `web_resources` directory
-    web_resources: Dict[str, str] = field(default_factory=dict)
+    _web_resources: Dict[str, str] = attrs.field(factory=dict)
     # Static files that are outside of `web_resources` directory, but still required
-    extra: Dict[str, str] = field(default_factory=dict)
+    _extra: Dict[str, str] = attrs.field(factory=dict)
+
+    @property
+    def extra(self) -> MappingProxyType:
+        """
+        Provide static files located outside "web_resources" directory.
+
+        The returned value is read-only mapping.
+        """
+        return MappingProxyType(self._extra)
 
     def add_web_resource_path(self, olx_static_path: str, cc_static_path: str) -> None:
         """
         Add web resource static file mapping.
         """
-        self.web_resources[olx_static_path] = cc_static_path
+        self._web_resources[olx_static_path] = cc_static_path
 
     def add_extra_path(self, olx_static_path: str, cc_static_path: str) -> None:
         """
         Add extra static file mapping.
         """
-        self.extra[olx_static_path] = cc_static_path
+        self._extra[olx_static_path] = cc_static_path
 
-    def __post_init__(self) -> None:
-        self.all = ChainMap(self.extra, self.web_resources)
+    def __attrs_post_init__(self) -> None:
+        self.all = ChainMap(self._extra, self._web_resources)
 
 
 class LinkKeywordProcessor(NamedTuple):
@@ -96,6 +105,13 @@ class ContentParserContextMixin:
     """
 
     relative_links_source: Optional[str]
+    _content_types_with_custom_blocks: List[str]
+
+    def is_content_type_with_custom_block_used(self, content_type: str) -> bool:
+        """
+        Decide whether a content type with custom block is used.
+        """
+        return content_type in self._content_types_with_custom_blocks
 
 
 class ContentParserContext(ContentParserContextMixin):
@@ -113,7 +129,10 @@ class ContentParserContext(ContentParserContextMixin):
         """
         Create the content parser context from the content processor context.
         """
-        return cls(content_processor_context.relative_links_source)
+        return cls(
+            content_processor_context.relative_links_source,
+            content_processor_context._content_types_with_custom_blocks,
+        )
 
 
 @attrs.define(frozen=True, slots=False)

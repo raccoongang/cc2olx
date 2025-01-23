@@ -2,10 +2,12 @@ import html as html_parser
 import logging
 import re
 import urllib
+from pathlib import Path
 from typing import TypeVar, Optional
 
+from cc2olx.constants import OLX_STATIC_PATH_TEMPLATE, WEB_RESOURCES_DIR_NAME
 from cc2olx.dataclasses import LinkKeywordProcessor
-from cc2olx.models import Cartridge
+from cc2olx.models import Cartridge, ResourceFile
 
 logger = logging.getLogger()
 
@@ -125,3 +127,49 @@ class StaticLinkProcessor:
 
         url = urllib.parse.urljoin(self._relative_links_source, link)
         return html.replace(link, url)
+
+
+class WebContent:
+    """
+    Represent Common Cartridge web content resource type.
+    """
+
+    def __init__(self, cartridge: Cartridge, resource_file: ResourceFile) -> None:
+        self._resource_relative_path = resource_file.href
+        self._resource_file_path = cartridge.build_resource_file_path(self._resource_relative_path)
+
+    @property
+    def resource_relative_path(self) -> str:
+        """
+        Resource file path inside .imscc file.
+        """
+        return self._resource_relative_path
+
+    @property
+    def resource_file_path(self) -> Path:
+        """
+        Absolute file path of unpacked resource in the filesystem.
+        """
+        return self._resource_file_path
+
+    @property
+    def static_file_path(self) -> str:
+        """
+        File path inside OLX_STATIC_DIR.
+        """
+        if self.is_from_web_resources_dir():
+            return str(self._resource_file_path).split(f"{WEB_RESOURCES_DIR_NAME}/")[1]
+        return self._resource_relative_path
+
+    @property
+    def olx_static_path(self) -> str:
+        """
+        OLX static file path.
+        """
+        return OLX_STATIC_PATH_TEMPLATE.format(static_file_path=self.static_file_path)
+
+    def is_from_web_resources_dir(self) -> bool:
+        """
+        Whether resource file is located in "web_resources" directory.
+        """
+        return WEB_RESOURCES_DIR_NAME in str(self._resource_file_path)

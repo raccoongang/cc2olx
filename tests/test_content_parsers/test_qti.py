@@ -7,9 +7,11 @@ from cc2olx.exceptions import QtiError
 
 
 class TestQtiContentParser:
+    parser_type = QtiContentParser
+
     @pytest.mark.parametrize("cc_profile", ["unknown_profile", "cc.chess.v0p1", "cc.drag_and_drop.v0p1", "123"])
     def test_parse_problem_raises_qti_error_if_cc_profile_is_unknown(self, cc_profile):
-        parser = QtiContentParser(Mock(), Mock())
+        parser = self.parser_type(Mock(), Mock())
         problem_mock = MagicMock(profile=cc_profile)
 
         with pytest.raises(QtiError) as exc_info:
@@ -19,7 +21,7 @@ class TestQtiContentParser:
 
     @patch("cc2olx.content_parsers.qti.logger")
     def test_parse_problem_logs_inability_to_process_problem(self, logger_mock):
-        parser = QtiContentParser(Mock(), Mock())
+        parser = self.parser_type(Mock(), Mock())
         ident_mock = MagicMock()
         resource_file_path_mock = Mock()
         cc_profile_mock = Mock()
