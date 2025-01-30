@@ -123,6 +123,7 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
                 CommonCartridgeResourceType.LTI_LINK,
                 CommonCartridgeResourceType.QTI_ASSESSMENT,
                 CommonCartridgeResourceType.DISCUSSION_TOPIC,
+                CommonCartridgeResourceType.ASSIGNMENT,
             )
         )
 
