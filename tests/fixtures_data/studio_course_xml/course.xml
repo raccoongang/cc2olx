@@ -407,7 +407,7 @@ allow="autoplay *">
                   </openassessment>
             </vertical>
 			<vertical display_name="Assignment 2. Television role in education composition" url_name="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                <openassessment allow_multiple_files="True" display_name="Assignment 2. Television role in education composition" file_upload_response="" file_upload_type="pdf-and-image" prompts_type="text" text_response="required" text_response_editor="text" url_name="resource_assignment_2" white_listed_file_types="pdf,gif,jpg,jpeg,jfif,pjpeg,pjp,png">
+                <openassessment allow_multiple_files="True" display_name="Assignment 2. Television role in education composition" file_upload_response="" prompts_type="text" text_response="required" text_response_editor="text" url_name="resource_assignment_2">
                     <title>Television role in education</title>
                     <assessments>
                       <assessment name="staff-assessment" required="True"/>

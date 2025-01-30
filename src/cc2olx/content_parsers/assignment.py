@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 from cc2olx import filesystem
 from cc2olx.content_parsers import AbstractContentParser
@@ -69,21 +69,17 @@ class AssignmentContentParser(AbstractContentParser):
         Parse response-related data.
         """
         accepted_format_types = self._parse_accepted_format_types(resource_root)
-        is_file_submission_allowed = AssignmentSubmissionFormatType.FILE in accepted_format_types
-        is_textual_submission_allowed = bool(
-            AssignmentSubmissionFormatType.get_not_file_types().intersection(accepted_format_types)
-        )
-        text_response_editor = "tinymce" if AssignmentSubmissionFormatType.HTML in accepted_format_types else "text"
+        is_file_submission_allowed = self._is_file_submission_allowed(accepted_format_types)
+        is_textual_submission_allowed = self._is_textual_submission_allowed(accepted_format_types)
+        file_upload_response = self._get_file_upload_response(is_textual_submission_allowed, is_file_submission_allowed)
 
         return {
             "text_response": self._get_text_response(is_textual_submission_allowed, is_file_submission_allowed),
-            "text_response_editor": text_response_editor,
-            "file_upload_response": (
-                self._get_file_upload_response(is_textual_submission_allowed, is_file_submission_allowed)
-            ),
+            "text_response_editor": self._get_text_response_editor(accepted_format_types),
+            "file_upload_response": file_upload_response,
             "allow_multiple_files": True,
-            "file_upload_type": self.DEFAULT_FILE_UPLOAD_TYPE,
-            "white_listed_file_types": self.DEFAULT_WHITE_LISTED_FILE_TYPES,
+            "file_upload_type": self._get_file_upload_type(file_upload_response),
+            "white_listed_file_types": self._get_white_listed_file_types(file_upload_response),
         }
 
     def _parse_accepted_format_types(self, resource_root: cc_xml.AssignmentElement) -> Set[str]:
@@ -92,6 +88,20 @@ class AssignmentContentParser(AbstractContentParser):
         """
         accepted_format_types = {accepted_format.attrib["type"] for accepted_format in resource_root.accepted_formats}
         return accepted_format_types or self.DEFAULT_ACCEPTED_FORMAT_TYPES
+
+    @staticmethod
+    def _is_file_submission_allowed(accepted_format_types: Set[str]) -> bool:
+        """
+        Decide whether submitting a file as an answer to assignment is allowed.
+        """
+        return AssignmentSubmissionFormatType.FILE in accepted_format_types
+
+    @staticmethod
+    def _is_textual_submission_allowed(accepted_format_types: Set[str]) -> bool:
+        """
+        Decide whether submitting a textual answer to assignment is allowed.
+        """
+        return bool(AssignmentSubmissionFormatType.get_not_file_types().intersection(accepted_format_types))
 
     @staticmethod
     def _get_text_response(is_textual_submission_allowed: bool, is_file_submission_allowed: bool) -> str:
@@ -110,3 +120,22 @@ class AssignmentContentParser(AbstractContentParser):
         if is_file_submission_allowed:
             return "optional" if is_textual_submission_allowed else "required"
         return ""
+
+    @staticmethod
+    def _get_text_response_editor(accepted_format_types: Set[str]) -> str:
+        """
+        Provide text response editor type.
+        """
+        return "tinymce" if AssignmentSubmissionFormatType.HTML in accepted_format_types else "text"
+
+    def _get_file_upload_type(self, file_upload_response: str) -> Optional[str]:
+        """
+        Provide file upload type.
+        """
+        return self.DEFAULT_FILE_UPLOAD_TYPE if file_upload_response else None
+
+    def _get_white_listed_file_types(self, file_upload_response: str) -> List[str]:
+        """
+        Provide file types allowed to submit.
+        """
+        return self.DEFAULT_WHITE_LISTED_FILE_TYPES if file_upload_response else []

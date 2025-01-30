@@ -11,9 +11,6 @@ class AssignmentOlxGenerator(AbstractOlxGenerator):
     Generate OLX for assignments.
     """
 
-    FILE_UPLOAD_TYPE = "pdf-and-image"
-    WHITE_LISTED_FILE_TYPES = ["pdf", "gif", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "png"]
-
     def create_nodes(self, content: dict) -> List[xml.dom.minidom.Element]:
         el = element_builder(self._doc)
 
@@ -46,12 +43,18 @@ class AssignmentOlxGenerator(AbstractOlxGenerator):
         """
         Generate ORA root tag attributes.
         """
-        return {
+        attributes = {
             "prompts_type": content["prompts_type"],
             "text_response_editor": content["text_response_editor"],
             "text_response": content["text_response"],
             "file_upload_response": content["file_upload_response"],
-            "file_upload_type": content["file_upload_type"],
-            "white_listed_file_types": ",".join(content["white_listed_file_types"]),
             "allow_multiple_files": str(content["allow_multiple_files"]),
         }
+
+        if content["file_upload_type"] is not None:
+            attributes["file_upload_type"] = content["file_upload_type"]
+
+        if content["white_listed_file_types"]:
+            attributes["white_listed_file_types"] = ",".join(content["white_listed_file_types"])
+
+        return attributes
