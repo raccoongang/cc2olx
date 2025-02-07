@@ -92,7 +92,10 @@ class BasicLtiLink(CommonCartridgeElementBase):
         "lticp": "http://www.imsglobal.org/xsd/imslticp_v1p0",
         "lticm": "http://www.imsglobal.org/xsd/imslticm_v1p0",
     }
-    NODE_NAMESPACES = ["http://www.imsglobal.org/xsd/imslticc_v1p0"]
+    NODE_NAMESPACES = [
+        "http://www.imsglobal.org/xsd/imslticc_v1p0",
+        "http://www.imsglobal.org/xsd/imslticc_v1p3",
+    ]
     NODE_NAME = "cartridge_basiclti_link"
 
     @property
