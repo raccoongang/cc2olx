@@ -1,22 +1,23 @@
 import re
-from typing import Dict, Optional
+import xml.dom.minidom
+from typing import Dict, List, Optional
 
 from cc2olx import filesystem
-from cc2olx.content_parsers import AbstractContentParser
+from cc2olx.content_processors.abc import AbstractContentProcessor
 from cc2olx.enums import CommonCartridgeResourceType
-from cc2olx.utils import simple_slug
+from cc2olx.utils import element_builder, simple_slug
 from cc2olx.xml import cc_xml
 
 
-class LtiContentParser(AbstractContentParser):
+class LtiContentProcessor(AbstractContentProcessor):
     """
-    LTI resource content parser.
+    LTI content processor.
     """
 
     DEFAULT_WIDTH = "500"
     DEFAULT_HEIGHT = "500"
 
-    def _parse_content(self, idref: Optional[str]) -> Optional[dict]:
+    def _parse(self, idref: Optional[str]) -> Optional[dict]:
         if idref:
             if resource := self._cartridge.define_resource(idref):
                 if re.match(CommonCartridgeResourceType.LTI_LINK, resource["type"]):
@@ -83,3 +84,41 @@ class LtiContentParser(AbstractContentParser):
         """
         tool_id = resource_root.canvas_tool_id
         return simple_slug(title) if tool_id is None else tool_id.text
+
+    def _create_nodes(self, content: dict) -> List[xml.dom.minidom.Element]:
+        el = element_builder(self._doc)
+
+        custom_parameters = "[{params}]".format(
+            params=", ".join(
+                [
+                    '"{key}={value}"'.format(
+                        key=key,
+                        value=value,
+                    )
+                    for key, value in content["custom_parameters"].items()
+                ]
+            ),
+        )
+        lti_consumer_node = el(
+            "lti_consumer",
+            [],
+            {
+                "custom_parameters": custom_parameters,
+                "description": content["description"],
+                "display_name": content["title"],
+                "inline_height": content["height"],
+                "inline_width": content["width"],
+                "launch_url": content["launch_url"],
+                "modal_height": content["height"],
+                "modal_width": content["width"],
+                "xblock-family": "xblock.v1",
+                "lti_id": content["lti_id"],
+            },
+        )
+        return [lti_consumer_node]
+
+    def _post_process(self, content: dict) -> None:
+        """
+        Populate LTI consumer IDs with the resource LTI ID.
+        """
+        self._context.add_lti_consumer_id(content["lti_id"])

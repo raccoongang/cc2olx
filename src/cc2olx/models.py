@@ -2,12 +2,13 @@ import logging
 import os.path
 import re
 import zipfile
+from collections import ChainMap
+from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional
+from typing import Dict, Optional
 
 from cc2olx import filesystem
-from cc2olx.dataclasses import OlxToOriginalStaticFilePaths
 from cc2olx.external.canvas import ModuleMeta
 from cc2olx.utils import clean_file_name
 
@@ -50,6 +51,33 @@ class ResourceDependency:
         return "<ResourceDependency identifierref={identifierref} />".format(
             identifierref=self.identifierref,
         )
+
+
+@dataclass
+class OlxToOriginalStaticFilePaths:
+    """
+    Provide OLX static file to Common cartridge static file mappings.
+    """
+
+    # Static files from `web_resources` directory
+    web_resources: Dict[str, str] = field(default_factory=dict)
+    # Static files that are outside of `web_resources` directory, but still required
+    extra: Dict[str, str] = field(default_factory=dict)
+
+    def add_web_resource_path(self, olx_static_path: str, cc_static_path: str) -> None:
+        """
+        Add web resource static file mapping.
+        """
+        self.web_resources[olx_static_path] = cc_static_path
+
+    def add_extra_path(self, olx_static_path: str, cc_static_path: str) -> None:
+        """
+        Add extra static file mapping.
+        """
+        self.extra[olx_static_path] = cc_static_path
+
+    def __post_init__(self) -> None:
+        self.all = ChainMap(self.extra, self.web_resources)
 
 
 class Cartridge:

@@ -2,9 +2,8 @@ import html as html_parser
 import logging
 import re
 import urllib
-from typing import TypeVar, Optional
+from typing import Callable, NamedTuple, Optional, TypeVar
 
-from cc2olx.dataclasses import LinkKeywordProcessor
 from cc2olx.models import Cartridge
 
 logger = logging.getLogger()
@@ -12,9 +11,18 @@ logger = logging.getLogger()
 Content = TypeVar("Content")
 
 
-class StaticLinkProcessor:
+class LinkKeywordProcessor(NamedTuple):
     """
-    Provide static links processing functionality.
+    Encapsulate a link keyword and it's processor.
+    """
+
+    keyword: str
+    processor: Callable[[str, str], str]
+
+
+class StaticLinkModifier:
+    """
+    Provide static links modifying functionality.
     """
 
     def __init__(self, cartridge: Cartridge, relative_links_source: Optional[str]) -> None:
@@ -27,7 +35,6 @@ class StaticLinkProcessor:
 
         Provide detail data with static link escaped to an OLX-friendly format.
         """
-
         if isinstance(content, str):
             return self.process_static_links(content)
 

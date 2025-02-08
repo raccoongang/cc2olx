@@ -3,11 +3,9 @@ import logging
 import xml.dom.minidom
 from typing import List, Type
 
-from django.conf import settings
-from django.utils.module_loading import import_string
-
 from cc2olx.content_processors import AbstractContentProcessor
-from cc2olx.dataclasses import ContentProcessorContext
+from cc2olx.content_processors.dataclasses import ContentProcessorContext
+from cc2olx.content_processors.utils import load_content_processor_types
 from cc2olx.iframe_link_parser import KalturaIframeLinkParser
 from cc2olx.utils import passport_file_parser
 
@@ -38,14 +36,21 @@ class OlxExport:
         self.iframe_link_parser = KalturaIframeLinkParser(self.link_file) if link_file else None
         self.lti_consumer_present = False
         self.lti_consumer_ids = set()
-        self._content_processor_types = self._load_content_processor_types()
+        self._content_processors = self._create_content_processors(load_content_processor_types())
 
-    @staticmethod
-    def _load_content_processor_types() -> List[Type[AbstractContentProcessor]]:
+    def _create_content_processors(
+        self,
+        content_processor_types: List[Type[AbstractContentProcessor]],
+    ) -> List[AbstractContentProcessor]:
         """
-        Load content processor types.
+        Create content processor instances.
         """
-        return [import_string(processor_path) for processor_path in settings.CONTENT_PROCESSORS]
+        context = ContentProcessorContext(
+            iframe_link_parser=self.iframe_link_parser,
+            lti_consumer_ids=self.lti_consumer_ids,
+            relative_links_source=self.relative_links_source,
+        )
+        return [content_processor_type(self.cartridge, context) for content_processor_type in content_processor_types]
 
     def xml(self):
         self.doc = xml.dom.minidom.Document()
@@ -175,8 +180,7 @@ class OlxExport:
 
     def _create_olx_nodes(self, element_data: dict) -> List["xml.dom.minidom.Element"]:
         """
-        This helps to create OLX node of different type. For eg HTML, VIDEO, QTI, LTI,
-        Discussion.
+        Help to create OLX nodes of different Common Cartridge resource types.
 
         Args:
             element_data (dict): a normalized CC element data.
@@ -188,16 +192,9 @@ class OlxExport:
             [List]: List of OLX nodes that needs to be written.
         """
         idref = element_data.get("identifierref")
-        context = ContentProcessorContext(
-            iframe_link_parser=self.iframe_link_parser,
-            lti_consumer_ids=self.lti_consumer_ids,
-            relative_links_source=self.relative_links_source,
-        )
 
-        for processor_type in self._content_processor_types:
-            processor = processor_type(self.cartridge, context)
-
-            if olx_nodes := processor.process(idref):
+        for content_processor in self._content_processors:
+            if olx_nodes := content_processor.process(idref):
                 return olx_nodes
 
         raise OlxExportException(f'The resource with "{idref}" identifier value is not supported.')

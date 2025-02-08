@@ -1,18 +1,22 @@
 import re
-from typing import Dict, Optional
+import xml.dom.minidom
+from typing import Dict, List, Optional
 
 from cc2olx import filesystem
-from cc2olx.content_parsers import AbstractContentParser
+from cc2olx.content_processors.abc import AbstractContentProcessor
 from cc2olx.enums import CommonCartridgeResourceType
 from cc2olx.models import ResourceFile
+from cc2olx.utils import clean_from_cdata, element_builder
 
 
-class DiscussionContentParser(AbstractContentParser):
+class DiscussionContentProcessor(AbstractContentProcessor):
     """
-    Discussion resource content parser.
+    Discussion content processor.
     """
 
-    def _parse_content(self, idref: Optional[str]) -> Optional[Dict[str, str]]:
+    DEFAULT_TEXT = "MISSING CONTENT"
+
+    def _parse(self, idref: Optional[str]) -> Optional[Dict[str, str]]:
         if idref:
             if resource := self._cartridge.define_resource(idref):
                 if re.match(CommonCartridgeResourceType.DISCUSSION_TOPIC, resource["type"]):
@@ -42,3 +46,22 @@ class DiscussionContentParser(AbstractContentParser):
             "title": root.get_title(resource_type).text,
             "text": root.get_text(resource_type).text,
         }
+
+    def _create_nodes(self, content: Dict[str, str]) -> List[xml.dom.minidom.Element]:
+        el = element_builder(self._doc)
+
+        txt = self.DEFAULT_TEXT if content["text"] is None else content["text"]
+        txt = clean_from_cdata(txt)
+        html_node = el("html", [self._doc.createCDATASection(txt)], {})
+
+        discussion_node = el(
+            "discussion",
+            [],
+            {
+                "display_name": "",
+                "discussion_category": content["title"],
+                "discussion_target": content["title"],
+            },
+        )
+
+        return [html_node, discussion_node]

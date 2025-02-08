@@ -1,13 +1,15 @@
 from unittest.mock import Mock
 
-from cc2olx.content_parsers import LtiContentParser
+from cc2olx.content_processors import LtiContentProcessor
 
 
-class TestLtiContentParser:
+class TestLtiContentProcessor:
+    processor_type = LtiContentProcessor
+
     def test_parsing_results(self, cartridge):
-        parser = LtiContentParser(cartridge, Mock())
+        processor = self.processor_type(cartridge, Mock())
 
-        assert parser.parse("resource_2_lti") == {
+        assert processor._parse("resource_2_lti") == {
             "title": "Learning Tools Interoperability",
             "description": "https://www.imsglobal.org/activity/learning-tools-interoperability",
             "launch_url": "https://lti.local/launch",

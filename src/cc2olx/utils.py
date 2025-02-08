@@ -5,7 +5,7 @@ import logging
 import re
 import string
 
-from cc2olx.constants import CDATA_PATTERN
+CDATA_PATTERN = r"<!\[CDATA\[(?P<content>.*?)\]\]>"
 
 logger = logging.getLogger()
 

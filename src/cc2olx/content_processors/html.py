@@ -1,29 +1,34 @@
 import imghdr
 import logging
 import re
+import xml.dom.minidom
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
+import lxml.html
 from django.conf import settings
 
-from cc2olx.constants import LINK_HTML, OLX_STATIC_PATH_TEMPLATE, WEB_RESOURCES_DIR_NAME
-from cc2olx.content_parsers import AbstractContentParser
-from cc2olx.content_parsers.mixins import WebLinkParserMixin
+from cc2olx.constants import OLX_STATIC_PATH_TEMPLATE
+from cc2olx.content_processors.abc import AbstractContentProcessor
+from cc2olx.content_processors.utils import parse_web_link_content
 from cc2olx.enums import CommonCartridgeResourceType
+from cc2olx.utils import clean_from_cdata
 
 logger = logging.getLogger()
 
 HTML_FILENAME_SUFFIX = ".html"
+LINK_HTML = '<a href="{url}">{text}</a>'
+WEB_RESOURCES_DIR_NAME = "web_resources"
 
 
-class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
+class HtmlContentProcessor(AbstractContentProcessor):
     """
-    HTML resource content parser.
+    HTML content processor.
     """
 
     DEFAULT_CONTENT = {"html": "<p>MISSING CONTENT</p>"}
 
-    def _parse_content(self, idref: Optional[str]) -> Dict[str, str]:
+    def _parse(self, idref: Optional[str]) -> Dict[str, str]:
         if idref:
             resource = self._cartridge.define_resource(idref)
             if resource is None:
@@ -31,7 +36,7 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
                 content = self.DEFAULT_CONTENT
             elif resource["type"] == CommonCartridgeResourceType.WEB_CONTENT:
                 content = self._parse_webcontent(idref, resource)
-            elif web_link_content := self._parse_web_link_content(resource):
+            elif web_link_content := parse_web_link_content(resource, self._cartridge):
                 content = self._transform_web_link_content_to_html(web_link_content)
             elif self.is_known_unprocessed_resource_type(resource["type"]):
                 content = self.DEFAULT_CONTENT
@@ -138,3 +143,50 @@ class HtmlContentParser(WebLinkParserMixin, AbstractContentParser):
 
         logger.info("%s", text)
         return {"html": text}
+
+    def _create_nodes(self, content: Dict[str, str]) -> List[xml.dom.minidom.Element]:
+        """
+        Process the HTML and gives out corresponding HTML or Video OLX nodes.
+        """
+        video_olx = []
+        nodes = []
+        html = content["html"]
+        if self._context.iframe_link_parser:
+            html, video_olx = self._process_html_for_iframe(html)
+        html = clean_from_cdata(html)
+        txt = self._doc.createCDATASection(html)
+
+        html_node = self._doc.createElement("html")
+        html_node.appendChild(txt)
+        nodes.append(html_node)
+
+        nodes.extend(video_olx)
+
+        return nodes
+
+    def _process_html_for_iframe(self, html_str: str) -> Tuple[str, List[xml.dom.minidom.Element]]:
+        """
+        Parse the iframe with embedded video, to be converted into video xblock.
+
+        Provide the html content of the file, if iframe is present and
+        converted into xblock then iframe is removed from the HTML, as well as
+        a list of XML children, i.e video xblock.
+        """
+        video_olx = []
+        parsed_html = lxml.html.fromstring(html_str)
+        iframes = parsed_html.xpath("//iframe")
+        if not iframes:
+            return html_str, video_olx
+
+        video_olx, converted_iframes = self._context.iframe_link_parser.get_video_olx(self._doc, iframes)
+        if video_olx:
+            # If video xblock is present then we modify the HTML to remove the iframe
+            # hence we need to convert the modified HTML back to string. We also remove
+            # the parent if there are no other children.
+            for iframe in converted_iframes:
+                parent = iframe.getparent()
+                parent.remove(iframe)
+                if not parent.getchildren():
+                    parent.getparent().remove(parent)
+            return lxml.html.tostring(parsed_html).decode("utf-8"), video_olx
+        return html_str, video_olx
