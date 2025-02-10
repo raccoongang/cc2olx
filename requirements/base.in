@@ -1,4 +1,5 @@
 # Core requirements for this package
+-c constraints.txt
 
 Django
 attrs
