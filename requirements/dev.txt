@@ -130,14 +130,20 @@ lxml==5.3.1
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
 markdown-it-py==3.0.0
-    # via rich
+    # via
+    #   -r requirements/ci.txt
+    #   -r requirements/quality.txt
+    #   rich
 mccabe==0.7.0
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   flake8
 mdurl==0.1.2
-    # via markdown-it-py
+    # via
+    #   -r requirements/ci.txt
+    #   -r requirements/quality.txt
+    #   markdown-it-py
 more-itertools==10.5.0
     # via
     #   jaraco-classes
@@ -194,6 +200,8 @@ pyflakes==3.2.0
     #   flake8
 pygments==2.19.1
     # via
+    #   -r requirements/ci.txt
+    #   -r requirements/quality.txt
     #   readme-renderer
     #   rich
 pyproject-api==1.8.0
@@ -238,7 +246,10 @@ requests-toolbelt==1.0.0
 rfc3986==2.0.0
     # via twine
 rich==13.9.4
-    # via twine
+    # via
+    #   -r requirements/ci.txt
+    #   -r requirements/quality.txt
+    #   twine
 secretstorage==3.3.3
     # via keyring
 sqlparse==0.5.3

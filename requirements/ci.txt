@@ -65,10 +65,18 @@ iniconfig==2.0.0
     #   pytest
 lxml==5.3.1
     # via -r requirements/quality.txt
+markdown-it-py==3.0.0
+    # via
+    #   -r requirements/quality.txt
+    #   rich
 mccabe==0.7.0
     # via
     #   -r requirements/quality.txt
     #   flake8
+mdurl==0.1.2
+    # via
+    #   -r requirements/quality.txt
+    #   markdown-it-py
 mypy-extensions==1.0.0
     # via
     #   -r requirements/quality.txt
@@ -103,6 +111,10 @@ pyflakes==3.2.0
     # via
     #   -r requirements/quality.txt
     #   flake8
+pygments==2.19.1
+    # via
+    #   -r requirements/quality.txt
+    #   rich
 pyproject-api==1.8.0
     # via tox
 pytest==8.3.4
@@ -118,6 +130,8 @@ pytest-django==4.9.0
 pytest-mock==3.14.0
     # via -r requirements/quality.txt
 requests==2.32.3
+    # via -r requirements/quality.txt
+rich==13.9.4
     # via -r requirements/quality.txt
 sqlparse==0.5.3
     # via
@@ -138,6 +152,7 @@ typing-extensions==4.12.2
     #   -r requirements/quality.txt
     #   asgiref
     #   black
+    #   rich
     #   tox
 urllib3==2.2.3
     # via
