@@ -78,4 +78,13 @@ def parse_args(args=None):
         type=link_source_validator,
         help="The relative links source in the format '<scheme>://<netloc>', e.g. 'https://example.com'",
     )
+    parser.add_argument(
+        "--logs_dir",
+        nargs="?",
+        type=str,
+        help=(
+            "The directory where to store the input file converting logs. If the parameter is not specified, "
+            "log files won't be created."
+        ),
+    )
     return parser.parse_args(args)
