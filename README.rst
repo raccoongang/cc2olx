@@ -64,6 +64,12 @@ course dump, you can specify their source using `-s` flag:
 
     cc2olx -i <IMSCC_FILE> -s <RELATIVE_LINKS_SOURCE>
 
+If you want to write logs of input files converting into files, you can
+specify the path to the directory where log files will be saved using
+`--logs_dir` flag::
+
+    cc2olx -i <IMSCC_FILE> --logs_dir <LOGS_DIRECTORY>
+
 Dockerization
 -------------
 
