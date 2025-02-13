@@ -30,15 +30,15 @@ class TestHtmlContentProcessor:
 
         assert actual_content == expected_content
 
-    @patch("cc2olx.content_processors.html.logger")
-    def test_parse_logs_missing_resource(self, logger_mock):
+    @patch("cc2olx.content_processors.html.console_logger")
+    def test_parse_logs_missing_resource(self, console_logger_mock):
         cartridge_mock = Mock(define_resource=Mock(return_value=None))
         processor = self.processor_type(cartridge_mock, Mock())
         idref_mock = Mock()
 
         processor._parse(idref_mock)
 
-        logger_mock.info.assert_called_once_with("Missing resource: %s", idref_mock)
+        console_logger_mock.info.assert_called_once_with("Missing resource: %s", idref_mock)
 
     @patch("cc2olx.content_processors.html.parse_web_link_content", Mock(return_value=None))
     @patch(
@@ -101,19 +101,19 @@ class TestHtmlContentProcessor:
 
         assert actual_content == expected_content
 
-    @patch("cc2olx.content_processors.html.logger")
+    @patch("cc2olx.content_processors.html.console_logger")
     @patch("cc2olx.content_processors.html.imghdr.what", Mock(return_value=None))
-    def test_parse_webcontent_logs_skipping_webcontent(self, logger_mock):
+    def test_parse_webcontent_logs_skipping_webcontent(self, console_logger_mock):
         resource_file_path = Path("web_resources/unknown/path/to/file.ext")
         processor = self.processor_type(Mock(build_resource_file_path=Mock(return_value=resource_file_path)), Mock())
 
         processor._parse_webcontent(Mock(), MagicMock())
 
-        logger_mock.info.assert_called_once_with("Skipping webcontent: %s", resource_file_path)
+        console_logger_mock.info.assert_called_once_with("Skipping webcontent: %s", resource_file_path)
 
-    @patch("cc2olx.content_processors.html.logger")
+    @patch("cc2olx.content_processors.html.console_logger")
     @patch("cc2olx.content_processors.html.open", Mock(side_effect=FileNotFoundError))
-    def test_webcontent_html_file_reading_failure_is_logged(self, logger_mock):
+    def test_webcontent_html_file_reading_failure_is_logged(self, console_logger_mock):
         processor = self.processor_type(Mock(), Mock())
         idref_mock = Mock()
         resource_file_path_mock = Mock()
@@ -121,7 +121,11 @@ class TestHtmlContentProcessor:
         with pytest.raises(FileNotFoundError):
             processor._parse_webcontent_html_file(idref_mock, resource_file_path_mock)
 
-        logger_mock.error.assert_called_once_with("Failure reading %s from id %s", resource_file_path_mock, idref_mock)
+        console_logger_mock.error.assert_called_once_with(
+            "Failure reading %s from id %s",
+            resource_file_path_mock,
+            idref_mock,
+        )
 
     @pytest.mark.parametrize(
         "resource,message",
@@ -133,14 +137,14 @@ class TestHtmlContentProcessor:
             ({"type": "some_type_mock"}, "Not imported content: type = 'some_type_mock'"),
         ],
     )
-    @patch("cc2olx.content_processors.html.logger")
-    def test_not_imported_content_parsing_with_href_in_resource(self, logger_mock, resource, message):
+    @patch("cc2olx.content_processors.html.console_logger")
+    def test_not_imported_content_parsing_with_href_in_resource(self, console_logger_mock, resource, message):
         processor = self.processor_type(Mock(), Mock())
         expected_content = {"html": message}
 
         actual_content = processor._parse_not_imported_content(resource)
 
-        logger_mock.info.assert_called_once_with("%s", message)
+        console_logger_mock.info.assert_called_once_with("%s", message)
         assert actual_content == expected_content
 
     def test_parsing_results(self, cartridge):

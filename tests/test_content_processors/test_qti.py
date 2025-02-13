@@ -19,8 +19,8 @@ class TestQtiContentProcessor:
 
         assert str(exc_info.value) == f'Unknown cc_profile: "{cc_profile}"'
 
-    @patch("cc2olx.content_processors.qti.logger")
-    def test_parse_problem_logs_inability_to_process_problem(self, logger_mock):
+    @patch("cc2olx.content_processors.qti.console_logger")
+    def test_parse_problem_logs_inability_to_process_problem(self, console_logger_mock):
         processor = self.processor_type(Mock(), Mock())
         ident_mock = MagicMock()
         resource_file_path_mock = Mock()
@@ -40,8 +40,8 @@ class TestQtiContentProcessor:
 
             processor._parse_problem(problem_mock, Mock(), resource_file_path_mock)
 
-        assert logger_mock.info.call_count == 3
-        assert logger_mock.info.call_args_list == expected_logger_info_call_args_list
+        assert console_logger_mock.info.call_count == 3
+        assert console_logger_mock.info.call_args_list == expected_logger_info_call_args_list
 
     @pytest.mark.parametrize("cc_profile", ["unknown_profile", "cc.chess.v0p1", "cc.drag_and_drop.v0p1", "123"])
     def test_create_nodes_raises_qti_error_if_cc_profile_is_unknown(self, cc_profile):
