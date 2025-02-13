@@ -1,12 +1,12 @@
 import html as html_parser
-import logging
 import re
 import urllib
 from typing import Callable, NamedTuple, Optional, TypeVar
 
+from cc2olx.logging import build_console_logger
 from cc2olx.models import Cartridge
 
-logger = logging.getLogger()
+console_logger = build_console_logger(__name__)
 
 Content = TypeVar("Content")
 
@@ -83,7 +83,7 @@ class StaticLinkModifier:
                 replace_with = "/jump_to_id/{}".format(self._cartridge.resource_id_by_href[key])
                 return html.replace(link, replace_with)
 
-        logger.warning("Unable to process Wiki link - %s", link)
+        console_logger.warning("Unable to process Wiki link - %s", link)
         return html
 
     @staticmethod

@@ -1,13 +1,14 @@
 """ Utility functions for cc2olx"""
 
 import csv
-import logging
 import re
 import string
 
+from cc2olx.logging import build_console_logger
+
 CDATA_PATTERN = r"<!\[CDATA\[(?P<content>.*?)\]\]>"
 
-logger = logging.getLogger()
+console_logger = build_console_logger(__name__)
 
 
 def element_builder(xml_doc):
@@ -78,7 +79,7 @@ def passport_file_parser(filename: str):
         headers = passport_file.fieldnames or []
         fields_in_header = [field in headers for field in required_fields]
         if not all(fields_in_header):
-            logger.warning(
+            console_logger.warning(
                 "Ignoring passport file (%s). Please ensure that the file"
                 " contains required headers consumer_id, consumer_key and consumer_secret.",
                 filename,
@@ -123,3 +124,10 @@ def clean_from_cdata(xml_string: str) -> str:
         str: cleaned XML string.
     """
     return re.sub(CDATA_PATTERN, r"\g<content>", xml_string, flags=re.DOTALL)
+
+
+def build_default_exception_output(exception: Exception) -> str:
+    """
+    Build the default exception output.
+    """
+    return f"{type(exception).__name__}: {exception}"

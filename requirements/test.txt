@@ -39,10 +39,22 @@ iniconfig==2.0.0
     # via pytest
 lxml==5.3.1
     # via -r requirements/base.txt
+markdown-it-py==3.0.0
+    # via
+    #   -r requirements/base.txt
+    #   rich
+mdurl==0.1.2
+    # via
+    #   -r requirements/base.txt
+    #   markdown-it-py
 packaging==24.2
     # via pytest
 pluggy==1.5.0
     # via pytest
+pygments==2.19.1
+    # via
+    #   -r requirements/base.txt
+    #   rich
 pytest==8.3.4
     # via
     #   -r requirements/test.in
@@ -57,6 +69,8 @@ pytest-mock==3.14.0
     # via -r requirements/test.in
 requests==2.32.3
     # via -r requirements/base.txt
+rich==13.9.4
+    # via -r requirements/base.txt
 sqlparse==0.5.3
     # via
     #   -r requirements/base.txt
@@ -69,6 +83,7 @@ typing-extensions==4.12.2
     # via
     #   -r requirements/base.txt
     #   asgiref
+    #   rich
 urllib3==2.2.3
     # via
     #   -r requirements/base.txt

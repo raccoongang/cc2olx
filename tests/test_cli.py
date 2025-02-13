@@ -26,6 +26,7 @@ def test_parse_args(imscc_file):
         passport_file=None,
         output="output",
         relative_links_source=None,
+        logs_dir=None,
     )
 
 
@@ -44,6 +45,7 @@ def test_parse_args_csv_file(imscc_file, link_map_csv):
         passport_file=None,
         output="output",
         relative_links_source=None,
+        logs_dir=None,
     )
 
 
@@ -60,6 +62,7 @@ def test_parse_args_passport_file(imscc_file, passports_csv):
         passport_file=passports_csv,
         output="output",
         relative_links_source=None,
+        logs_dir=None,
     )
 
 
@@ -79,6 +82,7 @@ def test_parse_args_with_correct_relative_links_source(imscc_file: Path) -> None
         passport_file=None,
         output="output",
         relative_links_source=relative_links_source,
+        logs_dir=None,
     )
 
 
@@ -90,3 +94,23 @@ def test_parse_args_with_incorrect_relative_links_source(imscc_file: Path) -> No
 
     with pytest.raises(SystemExit):
         parse_args(["-i", str(imscc_file), "-s", relative_links_source])
+
+
+def test_parse_args_logs_dir(imscc_file: Path) -> None:
+    """
+    Input test for logs directory.
+    """
+    logs_dir = "path/to/logs"
+
+    parsed_args = parse_args(["-i", str(imscc_file), "--logs_dir", logs_dir])
+
+    assert parsed_args == Namespace(
+        inputs=[imscc_file],
+        loglevel="INFO",
+        result="folder",
+        link_file=None,
+        passport_file=None,
+        output="output",
+        relative_links_source=None,
+        logs_dir=logs_dir,
+    )
