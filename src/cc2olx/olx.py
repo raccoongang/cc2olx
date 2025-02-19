@@ -48,6 +48,7 @@ class OlxExport:
         self.iframe_link_parser = KalturaIframeLinkParser(self.link_file) if link_file else None
         self.lti_consumer_present = False
         self.lti_consumer_ids = set()
+        self._logs_dir_path = logs_dir_path
         self._content_processors = self._create_content_processors(load_content_processor_types())
         self._export_statistics = OlxExportStatistics()
         self._file_logger = build_input_processing_file_logger(
@@ -74,6 +75,7 @@ class OlxExport:
             iframe_link_parser=self.iframe_link_parser,
             lti_consumer_ids=self.lti_consumer_ids,
             relative_links_source=self.relative_links_source,
+            logs_dir_path=self._logs_dir_path,
         )
         return [content_processor_type(self.cartridge, context) for content_processor_type in content_processor_types]
 

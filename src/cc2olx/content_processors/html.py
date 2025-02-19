@@ -9,9 +9,11 @@ from django.conf import settings
 
 from cc2olx.constants import OLX_STATIC_PATH_TEMPLATE
 from cc2olx.content_processors.abc import AbstractContentProcessor
+from cc2olx.content_processors.dataclasses import ContentProcessorContext
 from cc2olx.content_processors.utils import parse_web_link_content
 from cc2olx.enums import CommonCartridgeResourceType
-from cc2olx.logging import build_console_logger
+from cc2olx.logging import build_console_logger, build_input_processing_file_logger
+from cc2olx.models import Cartridge
 from cc2olx.utils import clean_from_cdata
 
 console_logger = build_console_logger(__name__)
@@ -28,11 +30,21 @@ class HtmlContentProcessor(AbstractContentProcessor):
 
     DEFAULT_CONTENT = {"html": "<p>MISSING CONTENT</p>"}
 
+    def __init__(self, cartridge: Cartridge, context: ContentProcessorContext):
+        super().__init__(cartridge, context)
+
+        self._file_logger = build_input_processing_file_logger(
+            __name__,
+            logs_dir_path=context.logs_dir_path,
+            input_file_path=cartridge.file_path,
+        )
+
     def _parse(self, idref: Optional[str]) -> Dict[str, str]:
         if idref:
             resource = self._cartridge.define_resource(idref)
             if resource is None:
-                console_logger.info("Missing resource: %s", idref)
+                console_logger.info("Missing resource: %s.", idref)
+                self._file_logger.info("Missing resource: %s.", idref)
                 content = self.DEFAULT_CONTENT
             elif resource["type"] == CommonCartridgeResourceType.WEB_CONTENT:
                 content = self._parse_webcontent(idref, resource)
@@ -60,7 +72,8 @@ class HtmlContentProcessor(AbstractContentProcessor):
         elif WEB_RESOURCES_DIR_NAME not in str(resource_file_path):
             content = self._parse_webcontent_outside_web_resources_dir(resource_relative_link)
         else:
-            console_logger.info("Skipping webcontent: %s", resource_file_path)
+            console_logger.info("Skipping webcontent: %s.", resource_file_path)
+            self._file_logger.info("Skipping webcontent: %s.", resource_file_path)
             content = self.DEFAULT_CONTENT
 
         return content
