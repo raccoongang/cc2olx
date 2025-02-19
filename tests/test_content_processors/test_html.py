@@ -10,6 +10,7 @@ from cc2olx.content_processors.dataclasses import ContentProcessorContext
 from cc2olx.iframe_link_parser import KalturaIframeLinkParser
 
 
+@patch("cc2olx.content_processors.html.build_input_processing_file_logger", Mock())
 class TestHtmlContentProcessor:
     processor_type = HtmlContentProcessor
 
@@ -38,7 +39,7 @@ class TestHtmlContentProcessor:
 
         processor._parse(idref_mock)
 
-        console_logger_mock.info.assert_called_once_with("Missing resource: %s", idref_mock)
+        console_logger_mock.info.assert_called_once_with("Missing resource: %s.", idref_mock)
 
     @patch("cc2olx.content_processors.html.parse_web_link_content", Mock(return_value=None))
     @patch(
@@ -109,7 +110,7 @@ class TestHtmlContentProcessor:
 
         processor._parse_webcontent(Mock(), MagicMock())
 
-        console_logger_mock.info.assert_called_once_with("Skipping webcontent: %s", resource_file_path)
+        console_logger_mock.info.assert_called_once_with("Skipping webcontent: %s.", resource_file_path)
 
     @patch("cc2olx.content_processors.html.console_logger")
     @patch("cc2olx.content_processors.html.open", Mock(side_effect=FileNotFoundError))
@@ -208,6 +209,7 @@ class TestHtmlContentProcessor:
             iframe_link_parser=KalturaIframeLinkParser(link_map_csv),
             lti_consumer_ids=set(),
             relative_links_source=None,
+            logs_dir_path=Mock(),
         )
         processor = self.processor_type(Mock(), context)
 
@@ -221,6 +223,7 @@ class TestHtmlContentProcessor:
             iframe_link_parser=KalturaIframeLinkParser(link_map_csv),
             lti_consumer_ids=set(),
             relative_links_source=None,
+            logs_dir_path=Mock(),
         )
         processor = self.processor_type(Mock(), context)
 
@@ -243,6 +246,7 @@ class TestHtmlContentProcessor:
             iframe_link_parser=None,
             lti_consumer_ids=set(),
             relative_links_source=None,
+            logs_dir_path=Mock(),
         )
         processor = self.processor_type(Mock(), context)
         content = {"html": cdata_containing_html}
@@ -266,6 +270,7 @@ class TestHtmlContentProcessor:
             iframe_link_parser=None,
             lti_consumer_ids=set(),
             relative_links_source=None,
+            logs_dir_path=Mock(),
         )
         processor = self.processor_type(Mock(), context)
         content = {"html": cdata_containing_html}

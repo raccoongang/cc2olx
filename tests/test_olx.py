@@ -80,6 +80,7 @@ def test_nodes_creation_failure_is_logged_during_olx_nodes_adding():
     olx_export._log_nodes_creation_failure.assert_called_once_with(idref_mock, olx_export_error)
 
 
+@patch("cc2olx.content_processors.html.build_input_processing_file_logger", Mock())
 @patch("cc2olx.olx.build_default_exception_output")
 @patch("cc2olx.olx.console_logger")
 def test_resource_processing_by_content_processor_failure_logging(
